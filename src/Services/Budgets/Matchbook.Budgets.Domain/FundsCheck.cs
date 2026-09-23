@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Matchbook.SharedKernel;
 
 namespace Matchbook.Budgets.Domain;
@@ -12,30 +13,35 @@ public enum FundsRefusal
 }
 
 /// <summary>
-/// The refusals that need no arithmetic. What is left after these is a question of available funds, which is
-/// answered by the grant itself.
+/// The refusals that need no arithmetic. What is left after these is a question of available funds, which only
+/// the grant itself can answer.
 /// </summary>
 public static class FundsCheck
 {
-    public static FundsRefusal? ForReservation(CostCentre? costCentre, Budget? budget) =>
-        costCentre is not { IsActive: true } ? FundsRefusal.CostCentreUnavailable
-        : budget is null ? FundsRefusal.NoBudget
-        : null;
+    public static bool RefusesReservation(
+        CostCentre? costCentre, [NotNullWhen(false)] Budget? budget, out FundsRefusal refusal)
+    {
+        refusal = costCentre is not { IsActive: true } ? FundsRefusal.CostCentreUnavailable : FundsRefusal.NoBudget;
+        return costCentre is not { IsActive: true } || budget is null;
+    }
 
     /// <remarks>
-    /// The cost centre is not checked here: the design refuses a commitment only for money, and an order whose
-    /// requisition was reserved while the cost centre was active is allowed to go through.
+    /// The cost centre is not checked: the design refuses a commitment only for money, and an order whose
+    /// requisition was reserved while its cost centre was active is allowed through.
     /// </remarks>
-    public static FundsRefusal? ForCommitment(RequisitionReservation? reservation, Budget? budget)
+    public static bool RefusesCommitment(
+        RequisitionReservation? reservation, [NotNullWhen(false)] Budget? budget, out FundsRefusal refusal)
     {
         if (reservation is { Status: ReservationStatus.Released })
         {
-            return FundsRefusal.DocumentClosed;
+            refusal = FundsRefusal.DocumentClosed;
+            return true;
         }
 
         if (budget is null)
         {
-            return FundsRefusal.NoBudget;
+            refusal = FundsRefusal.NoBudget;
+            return true;
         }
 
         if (reservation is { Status: ReservationStatus.Held } && reservation.BudgetId != budget.Id)
@@ -46,6 +52,7 @@ public static class FundsCheck
                 ViolationKind.Invalid);
         }
 
-        return null;
+        refusal = default;
+        return false;
     }
 }
