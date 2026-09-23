@@ -40,6 +40,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Matchbook.Testing/Matchbook.Testing.csproj" />
     <Project Path="tests/Matchbook.ArchitectureTests/Matchbook.ArchitectureTests.csproj" />
+    <Project Path="tests/Matchbook.BuildingBlocks.Tests/Matchbook.BuildingBlocks.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/Services/Suppliers/">
     <Project Path="tests/Services/Suppliers/Matchbook.Suppliers.UnitTests/Matchbook.Suppliers.UnitTests.csproj" />
