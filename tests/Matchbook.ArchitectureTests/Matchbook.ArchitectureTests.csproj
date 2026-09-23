@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <!-- Every host, so the test can read what each compiled layer of each service really references. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Services\Suppliers\Matchbook.Suppliers.Api\Matchbook.Suppliers.Api.csproj" />
+    <ProjectReference Include="..\..\src\Services\Budgets\Matchbook.Budgets.Api\Matchbook.Budgets.Api.csproj" />
+    <ProjectReference Include="..\..\src\Services\Requisitions\Matchbook.Requisitions.Api\Matchbook.Requisitions.Api.csproj" />
+    <ProjectReference Include="..\..\src\Services\Purchasing\Matchbook.Purchasing.Api\Matchbook.Purchasing.Api.csproj" />
+    <ProjectReference Include="..\..\src\Services\Payables\Matchbook.Payables.Api\Matchbook.Payables.Api.csproj" />
+    <ProjectReference Include="..\..\src\Gateway\Matchbook.Gateway\Matchbook.Gateway.csproj" />
+  </ItemGroup>
+
+</Project>

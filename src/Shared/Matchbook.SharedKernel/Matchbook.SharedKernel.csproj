@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The few types every service's inner layers agree on: who is acting, how a broken business rule is
+    reported, and how an amount is rounded. No package references, and it stays that way: a shared kernel
+    that grows a dependency couples five services to it.
+  -->
+
+</Project>

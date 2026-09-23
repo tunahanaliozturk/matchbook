@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Matchbook.Budgets.Domain\Matchbook.Budgets.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Matchbook.Contracts\Matchbook.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The core package only: DbSet and async LINQ. The provider, migrations and naming live in Infrastructure. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Matchbook.Budgets.UnitTests" />
+    <InternalsVisibleTo Include="Matchbook.Budgets.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

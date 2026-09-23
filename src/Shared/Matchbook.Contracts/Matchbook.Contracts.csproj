@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The integration events the services exchange, and nothing else. Plain records with no package
+    references, so a consumer depends on the shape of a message and never on another service's code or on
+    the messaging library.
+
+    Rules for changing a contract are in docs/contracts.md: add optional members, never rename or remove
+    one, and publish a new type for anything else.
+  -->
+
+</Project>

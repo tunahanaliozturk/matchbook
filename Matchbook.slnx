@@ -1,0 +1,67 @@
+<Solution>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Matchbook.SharedKernel/Matchbook.SharedKernel.csproj" />
+    <Project Path="src/Shared/Matchbook.Contracts/Matchbook.Contracts.csproj" />
+    <Project Path="src/Shared/Matchbook.BuildingBlocks/Matchbook.BuildingBlocks.csproj" />
+  </Folder>
+  <Folder Name="/src/Gateway/">
+    <Project Path="src/Gateway/Matchbook.Gateway/Matchbook.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Suppliers/">
+    <Project Path="src/Services/Suppliers/Matchbook.Suppliers.Domain/Matchbook.Suppliers.Domain.csproj" />
+    <Project Path="src/Services/Suppliers/Matchbook.Suppliers.Application/Matchbook.Suppliers.Application.csproj" />
+    <Project Path="src/Services/Suppliers/Matchbook.Suppliers.Infrastructure/Matchbook.Suppliers.Infrastructure.csproj" />
+    <Project Path="src/Services/Suppliers/Matchbook.Suppliers.Api/Matchbook.Suppliers.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Budgets/">
+    <Project Path="src/Services/Budgets/Matchbook.Budgets.Domain/Matchbook.Budgets.Domain.csproj" />
+    <Project Path="src/Services/Budgets/Matchbook.Budgets.Application/Matchbook.Budgets.Application.csproj" />
+    <Project Path="src/Services/Budgets/Matchbook.Budgets.Infrastructure/Matchbook.Budgets.Infrastructure.csproj" />
+    <Project Path="src/Services/Budgets/Matchbook.Budgets.Api/Matchbook.Budgets.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Requisitions/">
+    <Project Path="src/Services/Requisitions/Matchbook.Requisitions.Domain/Matchbook.Requisitions.Domain.csproj" />
+    <Project Path="src/Services/Requisitions/Matchbook.Requisitions.Application/Matchbook.Requisitions.Application.csproj" />
+    <Project Path="src/Services/Requisitions/Matchbook.Requisitions.Infrastructure/Matchbook.Requisitions.Infrastructure.csproj" />
+    <Project Path="src/Services/Requisitions/Matchbook.Requisitions.Api/Matchbook.Requisitions.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Purchasing/">
+    <Project Path="src/Services/Purchasing/Matchbook.Purchasing.Domain/Matchbook.Purchasing.Domain.csproj" />
+    <Project Path="src/Services/Purchasing/Matchbook.Purchasing.Application/Matchbook.Purchasing.Application.csproj" />
+    <Project Path="src/Services/Purchasing/Matchbook.Purchasing.Infrastructure/Matchbook.Purchasing.Infrastructure.csproj" />
+    <Project Path="src/Services/Purchasing/Matchbook.Purchasing.Api/Matchbook.Purchasing.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Payables/">
+    <Project Path="src/Services/Payables/Matchbook.Payables.Domain/Matchbook.Payables.Domain.csproj" />
+    <Project Path="src/Services/Payables/Matchbook.Payables.Application/Matchbook.Payables.Application.csproj" />
+    <Project Path="src/Services/Payables/Matchbook.Payables.Infrastructure/Matchbook.Payables.Infrastructure.csproj" />
+    <Project Path="src/Services/Payables/Matchbook.Payables.Api/Matchbook.Payables.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Matchbook.Testing/Matchbook.Testing.csproj" />
+    <Project Path="tests/Matchbook.ArchitectureTests/Matchbook.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/Suppliers/">
+    <Project Path="tests/Services/Suppliers/Matchbook.Suppliers.UnitTests/Matchbook.Suppliers.UnitTests.csproj" />
+    <Project Path="tests/Services/Suppliers/Matchbook.Suppliers.IntegrationTests/Matchbook.Suppliers.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/Budgets/">
+    <Project Path="tests/Services/Budgets/Matchbook.Budgets.UnitTests/Matchbook.Budgets.UnitTests.csproj" />
+    <Project Path="tests/Services/Budgets/Matchbook.Budgets.IntegrationTests/Matchbook.Budgets.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/Requisitions/">
+    <Project Path="tests/Services/Requisitions/Matchbook.Requisitions.UnitTests/Matchbook.Requisitions.UnitTests.csproj" />
+    <Project Path="tests/Services/Requisitions/Matchbook.Requisitions.IntegrationTests/Matchbook.Requisitions.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/Purchasing/">
+    <Project Path="tests/Services/Purchasing/Matchbook.Purchasing.UnitTests/Matchbook.Purchasing.UnitTests.csproj" />
+    <Project Path="tests/Services/Purchasing/Matchbook.Purchasing.IntegrationTests/Matchbook.Purchasing.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/Payables/">
+    <Project Path="tests/Services/Payables/Matchbook.Payables.UnitTests/Matchbook.Payables.UnitTests.csproj" />
+    <Project Path="tests/Services/Payables/Matchbook.Payables.IntegrationTests/Matchbook.Payables.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Matchbook.LicenseAudit/Matchbook.LicenseAudit.csproj" />
+  </Folder>
+</Solution>
