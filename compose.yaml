@@ -1,0 +1,166 @@
+# Matchbook on one machine: five services, the gateway, Postgres, RabbitMQ, Keycloak and the Aspire dashboard.
+#
+# Every password, key and token below is a public development value, bound to localhost. None of them is a
+# secret, and none of them belongs in any other environment.
+
+name: matchbook
+
+x-service: &service
+  restart: unless-stopped
+  depends_on:
+    postgres: { condition: service_healthy }
+    rabbitmq: { condition: service_healthy }
+    keycloak: { condition: service_healthy }
+  healthcheck:
+    test: ["CMD", "healthcheck", "/health/ready"]
+    interval: 5s
+    timeout: 3s
+    retries: 30
+    start_period: 10s
+
+x-service-environment: &service-environment
+  ConnectionStrings__RabbitMq: amqp://matchbook:matchbook@rabbitmq:5672/
+  Auth__Authority: http://keycloak:8080/realms/matchbook
+  Auth__Audience: matchbook
+  Auth__RequireHttpsMetadata: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    command: ["postgres", "-c", "max_connections=300"]
+    ports: ["5440:5432"]
+    volumes:
+      - postgres:/var/lib/postgresql
+      - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  rabbitmq:
+    image: rabbitmq:4.3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: matchbook
+      RABBITMQ_DEFAULT_PASS: matchbook
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      # Tokens name the address a person uses (localhost), while services fetch keys over the compose network.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    ports: ["8080:8080"]
+    volumes:
+      - ./deploy/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      # No curl in the image either; bash can speak HTTP to the management port.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 20s
+
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.4
+    environment:
+      DASHBOARD__FRONTEND__AUTHMODE: Unsecured
+      DASHBOARD__OTLP__AUTHMODE: Unsecured
+    ports: ["18888:18888"]
+
+  suppliers:
+    <<: *service
+    build:
+      context: .
+      args: { PROJECT: src/Services/Suppliers/Matchbook.Suppliers.Api, ASSEMBLY: Matchbook.Suppliers.Api }
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Database: Host=postgres;Database=suppliers;Username=suppliers;Password=suppliers
+      Encryption__ActiveKey: dev1
+      Encryption__Keys__dev1: rwtgJwHKYgYxWLnCrgEOmiekii+Q3QO+3daj91P58DY=
+
+  budgets:
+    <<: *service
+    build:
+      context: .
+      args: { PROJECT: src/Services/Budgets/Matchbook.Budgets.Api, ASSEMBLY: Matchbook.Budgets.Api }
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Database: Host=postgres;Database=budgets;Username=budgets;Password=budgets
+
+  requisitions:
+    <<: *service
+    build:
+      context: .
+      args: { PROJECT: src/Services/Requisitions/Matchbook.Requisitions.Api, ASSEMBLY: Matchbook.Requisitions.Api }
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Database: Host=postgres;Database=requisitions;Username=requisitions;Password=requisitions
+
+  purchasing:
+    <<: *service
+    build:
+      context: .
+      args: { PROJECT: src/Services/Purchasing/Matchbook.Purchasing.Api, ASSEMBLY: Matchbook.Purchasing.Api }
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Database: Host=postgres;Database=purchasing;Username=purchasing;Password=purchasing
+
+  payables:
+    <<: *service
+    build:
+      context: .
+      args: { PROJECT: src/Services/Payables/Matchbook.Payables.Api, ASSEMBLY: Matchbook.Payables.Api }
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Database: Host=postgres;Database=payables;Username=payables;Password=payables
+      Encryption__ActiveKey: dev1
+      Encryption__Keys__dev1: rwtgJwHKYgYxWLnCrgEOmiekii+Q3QO+3daj91P58DY=
+      Payer__Name: Matchbook Demo GmbH
+      Payer__Iban: DE89370400440532013000
+      Payer__Bic: COBADEFFXXX
+
+  gateway:
+    <<: *service
+    depends_on:
+      keycloak: { condition: service_healthy }
+      suppliers: { condition: service_healthy }
+      budgets: { condition: service_healthy }
+      requisitions: { condition: service_healthy }
+      purchasing: { condition: service_healthy }
+      payables: { condition: service_healthy }
+    build:
+      context: .
+      args: { PROJECT: src/Gateway/Matchbook.Gateway, ASSEMBLY: Matchbook.Gateway }
+    environment:
+      Auth__Authority: http://keycloak:8080/realms/matchbook
+      Auth__Audience: matchbook
+      Auth__RequireHttpsMetadata: "false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
+      ReverseProxy__Clusters__suppliers__Destinations__primary__Address: http://suppliers:8080
+      ReverseProxy__Clusters__budgets__Destinations__primary__Address: http://budgets:8080
+      ReverseProxy__Clusters__requisitions__Destinations__primary__Address: http://requisitions:8080
+      ReverseProxy__Clusters__purchasing__Destinations__primary__Address: http://purchasing:8080
+      ReverseProxy__Clusters__payables__Destinations__primary__Address: http://payables:8080
+    healthcheck:
+      test: ["CMD", "healthcheck", "/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    ports: ["5300:8080"]
+
+volumes:
+  postgres:

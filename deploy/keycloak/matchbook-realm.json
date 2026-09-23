@@ -1,0 +1,410 @@
+{
+  "realm": "matchbook",
+  "enabled": true,
+  "displayName": "Matchbook",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 3600,
+  "roles": {
+    "realm": [
+      {
+        "name": "requester",
+        "description": "Raises requisitions"
+      },
+      {
+        "name": "approver",
+        "description": "Approves requisitions for the cost centres they manage"
+      },
+      {
+        "name": "finance-approver",
+        "description": "Second approval above 10,000"
+      },
+      {
+        "name": "cfo",
+        "description": "Third approval above 100,000"
+      },
+      {
+        "name": "buyer",
+        "description": "Turns approved requisitions into purchase orders"
+      },
+      {
+        "name": "receiver",
+        "description": "Records goods received"
+      },
+      {
+        "name": "ap-clerk",
+        "description": "Captures supplier invoices"
+      },
+      {
+        "name": "ap-approver",
+        "description": "Accepts price variances and clears suspected duplicates"
+      },
+      {
+        "name": "treasurer",
+        "description": "Drafts and releases payment runs"
+      },
+      {
+        "name": "supplier-admin",
+        "description": "Creates suppliers and proposes bank accounts"
+      },
+      {
+        "name": "supplier-approver",
+        "description": "Activates suppliers and approves bank accounts"
+      },
+      {
+        "name": "budget-admin",
+        "description": "Sets up cost centres and budgets"
+      },
+      {
+        "name": "auditor",
+        "description": "Reads everything, changes nothing"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "matchbook-console",
+      "name": "Matchbook console",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5301/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5301"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5301/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "matchbook-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "matchbook",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "matchbook-cli",
+      "name": "Matchbook command line (development only)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "matchbook-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "matchbook",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "a0000000-0000-4000-8000-000000000001",
+      "username": "rita",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "rita@matchbook.test",
+      "firstName": "Rita",
+      "lastName": "Requester",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "requester"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000002",
+      "username": "mark",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "mark@matchbook.test",
+      "firstName": "Mark",
+      "lastName": "Manager",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "approver"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000003",
+      "username": "maya",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "maya@matchbook.test",
+      "firstName": "Maya",
+      "lastName": "Manager",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "approver"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000004",
+      "username": "fiona",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "fiona@matchbook.test",
+      "firstName": "Fiona",
+      "lastName": "Finance",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "finance-approver"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000005",
+      "username": "carl",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "carl@matchbook.test",
+      "firstName": "Carl",
+      "lastName": "Chief Financial Officer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "cfo"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000006",
+      "username": "bruno",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bruno@matchbook.test",
+      "firstName": "Bruno",
+      "lastName": "Buyer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "buyer"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000007",
+      "username": "rosa",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "rosa@matchbook.test",
+      "firstName": "Rosa",
+      "lastName": "Receiver",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "receiver"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000008",
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "alice@matchbook.test",
+      "firstName": "Alice",
+      "lastName": "Accounts Payable",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ap-clerk"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000009",
+      "username": "aaron",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "aaron@matchbook.test",
+      "firstName": "Aaron",
+      "lastName": "Accounts Payable",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ap-approver"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000010",
+      "username": "tess",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "tess@matchbook.test",
+      "firstName": "Tess",
+      "lastName": "Treasury",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "treasurer"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000011",
+      "username": "trevor",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "trevor@matchbook.test",
+      "firstName": "Trevor",
+      "lastName": "Treasury",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "treasurer"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000012",
+      "username": "sam",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "sam@matchbook.test",
+      "firstName": "Sam",
+      "lastName": "Supplier Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "supplier-admin"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000013",
+      "username": "sofia",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "sofia@matchbook.test",
+      "firstName": "Sofia",
+      "lastName": "Supplier Approver",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "supplier-approver"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000014",
+      "username": "bob",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bob@matchbook.test",
+      "firstName": "Bob",
+      "lastName": "Budget Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "budget-admin"
+      ]
+    },
+    {
+      "id": "a0000000-0000-4000-8000-000000000015",
+      "username": "audrey",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "audrey@matchbook.test",
+      "firstName": "Audrey",
+      "lastName": "Auditor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "matchbook",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "auditor"
+      ]
+    }
+  ]
+}
