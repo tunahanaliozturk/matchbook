@@ -291,18 +291,19 @@ public sealed class PurchaseOrder
         return true;
     }
 
-    /// <summary>Closes an issued order that still has goods to come. Nothing more will be received against it.</summary>
+    /// <summary>
+    /// Closes an issued order early. Nothing more will be received against it; invoices for what was received
+    /// are still counted.
+    /// </summary>
+    /// <remarks>
+    /// An issued order always has something open: the invoice that settles its last line completes it on the
+    /// spot. That includes an order received in full and invoiced in part, which is exactly the one a buyer
+    /// needs to close when the supplier will never bill the rest, or Budgets would hold that commitment forever.
+    /// </remarks>
     public void ShortClose(Actor buyer, DateTimeOffset now)
     {
         RequireRole(buyer, Roles.Buyer, "purchase_order.not_a_buyer");
         RequireStatus(PurchaseOrderStatus.Issued, "purchase_order.not_issued", "Only an issued order can be short-closed.");
-
-        if (_lines.TrueForAll(static line => line.OpenQuantity == 0))
-        {
-            throw new BusinessRuleException(
-                "purchase_order.nothing_open",
-                "Everything ordered has been received; the order completes when it is invoiced.");
-        }
 
         Close(PurchaseOrderStatus.ShortClosed, buyer, now);
     }

@@ -49,41 +49,37 @@ internal static class Orders
         order.Lines.Single(line => line.LineNumber == lineNumber);
 
     /// <summary>An order in the named state, for rules that hold across several states.</summary>
-    public static PurchaseOrder InState(string state)
+    public static PurchaseOrder InState(string state) => state switch
     {
-        switch (state)
-        {
-            case "draft":
-                return Draft();
-            case "pending":
-                return Pending();
-            case "issued":
-                return Issued();
-            case "short-closed":
-            {
-                PurchaseOrder order = Issued();
-                order.Receive((1, 1m));
-                order.ShortClose(People.Bruno, Now);
-                return order;
-            }
+        "draft" => Draft(),
+        "pending" => Pending(),
+        "issued" => Issued(),
+        "short-closed" => ShortClosed(),
+        "cancelled" => Cancelled(),
+        "completed" => Completed(),
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "No such state in the tests."),
+    };
 
-            case "cancelled":
-            {
-                PurchaseOrder order = Draft();
-                order.Cancel(People.Bruno, Now);
-                return order;
-            }
+    private static PurchaseOrder ShortClosed()
+    {
+        PurchaseOrder order = Issued();
+        order.Receive((1, 1m));
+        order.ShortClose(People.Bruno, Now);
+        return order;
+    }
 
-            case "completed":
-            {
-                PurchaseOrder order = Issued();
-                order.Receive((1, 10m), (2, 4m));
-                order.Invoice((1, 10m), (2, 4m));
-                return order;
-            }
+    private static PurchaseOrder Cancelled()
+    {
+        PurchaseOrder order = Draft();
+        order.Cancel(People.Bruno, Now);
+        return order;
+    }
 
-            default:
-                throw new ArgumentOutOfRangeException(nameof(state), state, "No such state in the tests.");
-        }
+    private static PurchaseOrder Completed()
+    {
+        PurchaseOrder order = Issued();
+        order.Receive((1, 10m), (2, 4m));
+        order.Invoice((1, 10m), (2, 4m));
+        return order;
     }
 }

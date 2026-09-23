@@ -18,7 +18,10 @@ public enum PurchaseOrderStatus
     /// <summary>Every line was received and invoiced in full.</summary>
     Completed,
 
-    /// <summary>A buyer closed it with goods still outstanding. Nothing more will be received.</summary>
+    /// <summary>
+    /// A buyer closed it before it settled. Nothing more will be received; invoices for what was received still
+    /// count.
+    /// </summary>
     ShortClosed,
 
     /// <summary>A buyer cancelled it before anything was received.</summary>

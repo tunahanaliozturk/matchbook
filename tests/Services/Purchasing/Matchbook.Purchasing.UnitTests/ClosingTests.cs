@@ -20,12 +20,15 @@ public sealed class ClosingTests
     }
 
     [Fact]
-    public void An_order_with_everything_received_is_not_short_closed_because_it_completes_on_its_own()
+    public void An_order_received_in_full_but_invoiced_in_part_can_be_short_closed_so_a_missing_invoice_cannot_hold_it_open()
     {
         PurchaseOrder order = Orders.Issued();
         order.Receive((1, 10m), (2, 4m));
+        order.Invoice((1, 10m), (2, 3m));
 
-        ShouldBeRefused(() => order.ShortClose(People.Bruno, Orders.Now), "purchase_order.nothing_open", ViolationKind.Conflict);
+        order.ShortClose(People.Bruno, Orders.Now);
+
+        order.Status.ShouldBe(PurchaseOrderStatus.ShortClosed);
     }
 
     [Theory]
