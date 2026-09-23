@@ -45,11 +45,13 @@ public sealed class SupplierVersionTests
     public void Changes_other_services_do_not_see_leave_the_version_alone()
     {
         Supplier supplier = Given.Active();
+        SupplierDetails newTaxIdAndEmail =
+            SupplierDetails.Create("Acme GmbH", "DE 999 888 777", "DE", 30, "new@acme.example");
 
-        supplier.ChangeDetails(People.Admin, SupplierDetails.Create("Acme GmbH", "DE 999 888 777", "DE", 30, "new@acme.example"));
+        supplier.ChangeDetails(People.Admin, newTaxIdAndEmail);
         BankAccount proposal = Given.Propose(supplier);
         supplier.RejectBankAccount(People.Approver, proposal.Id, "No", Given.Now);
-        supplier.ChangeDetails(People.Admin, SupplierDetails.Create("Acme GmbH", "DE 999 888 777", "DE", 30, "new@acme.example"));
+        supplier.ChangeDetails(People.Admin, newTaxIdAndEmail);
 
         supplier.Version.ShouldBe(1);
     }
@@ -74,7 +76,8 @@ public sealed class SupplierVersionTests
         Prop.ForAll(Arb.From(Gen.Elements(Enum.GetValues<Operation>()).ListOf()), operations =>
         {
             Supplier supplier = Given.Active();
-            var model = new Model(Blocked: false, Pending: null, Verified: TestIbans.German, AccountVersion: 1, Version: 1, Terms: 30);
+            var model = new Model(
+                Blocked: false, Pending: null, Verified: TestIbans.German, AccountVersion: 1, Version: 1, Terms: 30);
             int step = 0;
 
             foreach (Operation operation in operations)
@@ -93,8 +96,9 @@ public sealed class SupplierVersionTests
                     Should.Throw<BusinessRuleException>(act);
                 }
 
-                supplier.Version.ShouldBe(model.Version, $"version after step {step}, {operation}");
-                supplier.AccountVersion.ShouldBe(model.AccountVersion, $"account version after step {step}, {operation}");
+                string after = $"after step {step}, {operation}";
+                supplier.Version.ShouldBe(model.Version, $"version {after}");
+                supplier.AccountVersion.ShouldBe(model.AccountVersion, $"account version {after}");
                 supplier.Status.ShouldBe(model.Blocked ? SupplierStatus.Blocked : SupplierStatus.Active);
                 supplier.PaymentTermsDays.ShouldBe(model.Terms);
                 supplier.VerifiedAccount.ShouldNotBeNull().Iban.Value.ShouldBe(model.Verified);
@@ -123,7 +127,8 @@ public sealed class SupplierVersionTests
                 supplier.ChangeDetails(People.Admin, Given.Details($"Acme {step}", terms: supplier.PaymentTermsDays));
                 break;
             case Operation.ChangeTerms:
-                supplier.ChangeDetails(People.Admin, Given.Details(supplier.LegalName, terms: (supplier.PaymentTermsDays + 1) % 121));
+                int longer = (supplier.PaymentTermsDays + 1) % 121;
+                supplier.ChangeDetails(People.Admin, Given.Details(supplier.LegalName, terms: longer));
                 break;
             case Operation.ChangeEmail:
                 supplier.ChangeDetails(People.Admin, SupplierDetails.Create(
@@ -152,7 +157,8 @@ public sealed class SupplierVersionTests
     // With nothing pending, an id nobody holds, so the domain refuses it rather than the test.
     private static Guid PendingId(Supplier supplier) => supplier.PendingAccount?.Id ?? Guid.NewGuid();
 
-    private sealed record Model(bool Blocked, string? Pending, string Verified, int AccountVersion, long Version, int Terms)
+    private sealed record Model(
+        bool Blocked, string? Pending, string Verified, int AccountVersion, long Version, int Terms)
     {
         public (Model Next, bool Allowed) After(Operation operation, int step) => operation switch
         {
@@ -163,7 +169,13 @@ public sealed class SupplierVersionTests
             Operation.Unblock => (this with { Blocked = false, Version = Version + 1 }, Blocked),
             Operation.Propose => (this with { Pending = TestIbans.Numbered(1000 + step) }, Pending is null),
             Operation.Approve => (
-                this with { Verified = Pending!, Pending = null, AccountVersion = AccountVersion + 1, Version = Version + 1 },
+                this with
+                {
+                    Verified = Pending!,
+                    Pending = null,
+                    AccountVersion = AccountVersion + 1,
+                    Version = Version + 1,
+                },
                 Pending is not null),
             Operation.Reject => (this with { Pending = null }, Pending is not null),
             _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null),
@@ -176,11 +188,17 @@ public sealed class SupplierVersionTests
     {
         ["block"] = new(Given.Active, static s => s.Block(People.Admin, "Checking", Given.Now), 1),
         ["unblock"] = new(Given.Blocked, static s => s.Unblock(People.Approver), 2),
-        ["new verified account"] = new(Given.Active, static s => s.ApproveBankAccount(People.Approver, Given.Propose(s).Id, Given.Now), 1),
-        ["new verified account while blocked"] = new(Given.Blocked, static s => s.ApproveBankAccount(People.Approver, Given.Propose(s).Id, Given.Now), 2),
-        ["legal name"] = new(Given.Active, static s => s.ChangeDetails(People.Admin, Given.Details("Acme Holding GmbH")), 1),
-        ["payment terms"] = new(Given.Active, static s => s.ChangeDetails(People.Admin, Given.Details(terms: 60)), 1),
-        ["country"] = new(Given.Active, static s => s.ChangeDetails(People.Admin, Given.Details(country: "AT")), 1),
-        ["name and terms at once"] = new(Given.Active, static s => s.ChangeDetails(People.Admin, Given.Details("Acme AG", terms: 14)), 1),
+        ["new verified account"] = new(Given.Active, ApproveNewAccount, 1),
+        ["new verified account while blocked"] = new(Given.Blocked, ApproveNewAccount, 2),
+        ["legal name"] = new(Given.Active, static s => Change(s, Given.Details("Acme Holding GmbH")), 1),
+        ["payment terms"] = new(Given.Active, static s => Change(s, Given.Details(terms: 60)), 1),
+        ["country"] = new(Given.Active, static s => Change(s, Given.Details(country: "AT")), 1),
+        ["name and terms at once"] = new(Given.Active, static s => Change(s, Given.Details("Acme AG", terms: 14)), 1),
     };
+
+    private static void ApproveNewAccount(Supplier supplier) =>
+        supplier.ApproveBankAccount(People.Approver, Given.Propose(supplier).Id, Given.Now);
+
+    private static void Change(Supplier supplier, SupplierDetails details) =>
+        supplier.ChangeDetails(People.Admin, details);
 }

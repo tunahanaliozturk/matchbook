@@ -31,7 +31,8 @@ public sealed class SupplierDetailsTests
     public void A_legal_name_has_at_most_200_characters()
     {
         Create(name: new string('a', 200)).LegalName.Length.ShouldBe(200);
-        BrokenRule.Expect("supplier.legal_name_invalid", ViolationKind.Invalid, () => Create(name: new string('a', 201)));
+        BrokenRule.Expect("supplier.legal_name_invalid", ViolationKind.Invalid, () =>
+            Create(name: new string('a', 201)));
     }
 
     [Property]

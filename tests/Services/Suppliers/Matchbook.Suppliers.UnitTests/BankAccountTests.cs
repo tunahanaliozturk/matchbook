@@ -44,7 +44,8 @@ public sealed class BankAccountTests
         Supplier supplier = Given.Active();
         BankAccount proposal = Given.Propose(supplier, proposer: People.AdminAndApprover);
 
-        BrokenRule.Expect("supplier.self_approval", ViolationKind.Forbidden, () => supplier.ApproveBankAccount(People.AdminAndApprover, proposal.Id, Given.Now));
+        BrokenRule.Expect("supplier.self_approval", ViolationKind.Forbidden, () =>
+            supplier.ApproveBankAccount(People.AdminAndApprover, proposal.Id, Given.Now));
         proposal.Status.ShouldBe(BankAccountStatus.Pending);
         supplier.AccountVersion.ShouldBe(1);
     }
@@ -55,12 +56,14 @@ public sealed class BankAccountTests
         Supplier supplier = Given.Active();
         BankAccount proposal = Given.Propose(supplier);
 
-        BrokenRule.Expect("supplier.role_required", ViolationKind.Forbidden, () => supplier.ApproveBankAccount(People.OtherAdmin, proposal.Id, Given.Now));
+        BrokenRule.Expect("supplier.role_required", ViolationKind.Forbidden, () =>
+            supplier.ApproveBankAccount(People.OtherAdmin, proposal.Id, Given.Now));
     }
 
     [Fact]
     public void A_supplier_approver_cannot_propose_a_bank_account() =>
-        BrokenRule.Expect("supplier.role_required", ViolationKind.Forbidden, () => Given.Propose(Given.Active(), proposer: People.Approver));
+        BrokenRule.Expect("supplier.role_required", ViolationKind.Forbidden, () =>
+            Given.Propose(Given.Active(), proposer: People.Approver));
 
     [Fact]
     public void Rejection_keeps_the_verified_account_and_records_who_and_why()
@@ -97,7 +100,8 @@ public sealed class BankAccountTests
         Supplier supplier = Given.Active();
         BankAccount proposal = Given.Propose(supplier);
 
-        BrokenRule.Expect("supplier.reason_invalid", ViolationKind.Invalid, () => supplier.RejectBankAccount(People.Approver, proposal.Id, " ", Given.Now));
+        BrokenRule.Expect("supplier.reason_invalid", ViolationKind.Invalid, () =>
+            supplier.RejectBankAccount(People.Approver, proposal.Id, " ", Given.Now));
         proposal.Status.ShouldBe(BankAccountStatus.Pending);
     }
 
@@ -107,7 +111,8 @@ public sealed class BankAccountTests
         Supplier supplier = Given.Active();
         BankAccount first = Given.Propose(supplier, ibanNumber: 1);
 
-        BrokenRule.Expect("supplier.bank_account_pending", ViolationKind.Conflict, () => Given.Propose(supplier, ibanNumber: 2));
+        BrokenRule.Expect("supplier.bank_account_pending", ViolationKind.Conflict, () =>
+            Given.Propose(supplier, ibanNumber: 2));
 
         supplier.RejectBankAccount(People.Approver, first.Id, "Wrong account", Given.Now);
         Given.Propose(supplier, ibanNumber: 2).Status.ShouldBe(BankAccountStatus.Pending);
@@ -117,9 +122,11 @@ public sealed class BankAccountTests
     public void Proposing_the_account_already_in_force_is_refused_however_it_is_typed()
     {
         Supplier supplier = Given.Active();
+        Iban sameIban = Iban.Parse("de89 3704 0044 0532 0130 00");
+        Bic sameBic = Bic.Parse("deutdeff");
 
         BrokenRule.Expect("supplier.bank_account_unchanged", ViolationKind.Conflict, () =>
-            supplier.ProposeBankAccount(People.Admin, Iban.Parse("de89 3704 0044 0532 0130 00"), Bic.Parse("deutdeff"), " Acme GmbH ", Given.Now));
+            supplier.ProposeBankAccount(People.Admin, sameIban, sameBic, " Acme GmbH ", Given.Now));
     }
 
     [Fact]
@@ -141,9 +148,12 @@ public sealed class BankAccountTests
         BankAccount rejected = Given.Propose(supplier);
         supplier.RejectBankAccount(People.Approver, rejected.Id, "No", Given.Now);
 
-        BrokenRule.Expect("supplier.bank_account_not_pending", ViolationKind.Conflict, () => supplier.ApproveBankAccount(People.OtherApprover, approved.Id, Given.Now));
-        BrokenRule.Expect("supplier.bank_account_not_pending", ViolationKind.Conflict, () => supplier.ApproveBankAccount(People.OtherApprover, rejected.Id, Given.Now));
-        BrokenRule.Expect("supplier.bank_account_not_pending", ViolationKind.Conflict, () => supplier.RejectBankAccount(People.OtherApprover, approved.Id, "No", Given.Now));
+        BrokenRule.Expect("supplier.bank_account_not_pending", ViolationKind.Conflict, () =>
+            supplier.ApproveBankAccount(People.OtherApprover, approved.Id, Given.Now));
+        BrokenRule.Expect("supplier.bank_account_not_pending", ViolationKind.Conflict, () =>
+            supplier.ApproveBankAccount(People.OtherApprover, rejected.Id, Given.Now));
+        BrokenRule.Expect("supplier.bank_account_not_pending", ViolationKind.Conflict, () =>
+            supplier.RejectBankAccount(People.OtherApprover, approved.Id, "No", Given.Now));
         supplier.AccountVersion.ShouldBe(1);
     }
 
@@ -153,7 +163,8 @@ public sealed class BankAccountTests
         Supplier other = Given.Active();
         BankAccount elsewhere = Given.Propose(other);
 
-        BrokenRule.Expect("supplier.bank_account_not_found", ViolationKind.NotFound, () => Given.Active().ApproveBankAccount(People.Approver, elsewhere.Id, Given.Now));
+        BrokenRule.Expect("supplier.bank_account_not_found", ViolationKind.NotFound, () =>
+            Given.Active().ApproveBankAccount(People.Approver, elsewhere.Id, Given.Now));
     }
 
     [Fact]
@@ -166,7 +177,9 @@ public sealed class BankAccountTests
         supplier.ApproveBankAccount(People.OtherApprover, second.Id, Given.Now);
         BankAccount pending = Given.Propose(supplier, ibanNumber: 3);
 
-        supplier.BankAccounts.Select(static account => (account.Status, account.AccountVersion, account.ProposedBy, account.DecidedBy)).ShouldBe(
+        supplier.BankAccounts
+            .Select(static account => (account.Status, account.AccountVersion, account.ProposedBy, account.DecidedBy))
+            .ShouldBe(
         [
             (BankAccountStatus.Approved, 1, People.Admin.Id, People.Approver.Id),
             (BankAccountStatus.Rejected, null, People.Admin.Id, People.Approver.Id),
@@ -182,17 +195,15 @@ public sealed class BankAccountTests
     [InlineData("")]
     [InlineData("   ")]
     public void An_account_holder_name_is_required(string? holder) =>
-        BrokenRule.Expect("supplier.account_holder_invalid", ViolationKind.Invalid, () =>
-            Given.Draft().ProposeBankAccount(People.Admin, Iban.Parse(TestIbans.German), Given.Bic, holder, Given.Now));
+        BrokenRule.Expect("supplier.account_holder_invalid", ViolationKind.Invalid, () => ProposeHeldBy(holder));
 
     [Fact]
     public void An_account_holder_name_fits_a_sepa_credit_transfer()
     {
-        Given.Draft().ProposeBankAccount(People.Admin, Iban.Parse(TestIbans.German), Given.Bic, new string('a', 70), Given.Now)
-            .AccountHolder.Length.ShouldBe(70);
+        ProposeHeldBy(new string('a', 70)).AccountHolder.Length.ShouldBe(70);
 
         BrokenRule.Expect("supplier.account_holder_invalid", ViolationKind.Invalid, () =>
-            Given.Draft().ProposeBankAccount(People.Admin, Iban.Parse(TestIbans.German), Given.Bic, new string('a', 71), Given.Now));
+            ProposeHeldBy(new string('a', 71)));
     }
 
     [Fact]
@@ -222,4 +233,7 @@ public sealed class BankAccountTests
             rejected.MayRevealIbanTo(actor).ShouldBeFalse();
         }
     }
+
+    private static BankAccount ProposeHeldBy(string? holder) =>
+        Given.Draft().ProposeBankAccount(People.Admin, Iban.Parse(TestIbans.German), Given.Bic, holder, Given.Now);
 }
