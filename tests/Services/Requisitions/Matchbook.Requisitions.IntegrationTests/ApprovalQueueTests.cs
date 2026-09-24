@@ -1,5 +1,6 @@
 using System.Net;
-using Matchbook.Requisitions.Application.UseCases;
+using Matchbook.Requisitions.Application.Common;
+using Matchbook.Requisitions.Application.Features.Requisitions;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;
 

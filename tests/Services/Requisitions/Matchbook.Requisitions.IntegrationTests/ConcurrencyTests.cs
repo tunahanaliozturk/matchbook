@@ -1,6 +1,6 @@
 using System.Net;
 using Matchbook.Contracts.Requisitions;
-using Matchbook.Requisitions.Application.UseCases;
+using Matchbook.Requisitions.Application.Features.Requisitions;
 using Matchbook.Requisitions.Domain;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;

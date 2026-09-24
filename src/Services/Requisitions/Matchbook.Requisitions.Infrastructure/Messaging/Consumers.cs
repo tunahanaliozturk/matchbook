@@ -2,7 +2,7 @@ using MassTransit;
 using Matchbook.Contracts.Budgets;
 using Matchbook.Contracts.Purchasing;
 using Matchbook.Contracts.Suppliers;
-using Matchbook.Requisitions.Application.IncomingEvents;
+using Matchbook.SharedKernel;
 
 namespace Matchbook.Requisitions.Infrastructure.Messaging;
 
@@ -11,37 +11,38 @@ namespace Matchbook.Requisitions.Infrastructure.Messaging;
 // service and the consumer (requisitions-funds-reserved), and the outbox and inbox around it come from
 // AddMatchbookMessaging.
 
-internal sealed class CostCentreChangedConsumer(CostCentreChangedHandler handler) : IConsumer<CostCentreChanged>
+internal sealed class CostCentreChangedConsumer(IIntegrationEventHandler<CostCentreChanged> handler) : IConsumer<CostCentreChanged>
 {
     public Task Consume(ConsumeContext<CostCentreChanged> context) =>
         handler.HandleAsync(context.Message, context.CancellationToken);
 }
 
-internal sealed class SupplierChangedConsumer(SupplierChangedHandler handler) : IConsumer<SupplierChanged>
+internal sealed class SupplierChangedConsumer(IIntegrationEventHandler<SupplierChanged> handler) : IConsumer<SupplierChanged>
 {
     public Task Consume(ConsumeContext<SupplierChanged> context) =>
         handler.HandleAsync(context.Message, context.CancellationToken);
 }
 
-internal sealed class FundsReservedConsumer(FundsReservedHandler handler) : IConsumer<FundsReserved>
+internal sealed class FundsReservedConsumer(IIntegrationEventHandler<FundsReserved> handler) : IConsumer<FundsReserved>
 {
     public Task Consume(ConsumeContext<FundsReserved> context) =>
         handler.HandleAsync(context.Message, context.CancellationToken);
 }
 
-internal sealed class FundsReservationRejectedConsumer(FundsReservationRejectedHandler handler) : IConsumer<FundsReservationRejected>
+internal sealed class FundsReservationRejectedConsumer(IIntegrationEventHandler<FundsReservationRejected> handler)
+    : IConsumer<FundsReservationRejected>
 {
     public Task Consume(ConsumeContext<FundsReservationRejected> context) =>
         handler.HandleAsync(context.Message, context.CancellationToken);
 }
 
-internal sealed class PurchaseOrderIssuedConsumer(PurchaseOrderIssuedHandler handler) : IConsumer<PurchaseOrderIssued>
+internal sealed class PurchaseOrderIssuedConsumer(IIntegrationEventHandler<PurchaseOrderIssued> handler) : IConsumer<PurchaseOrderIssued>
 {
     public Task Consume(ConsumeContext<PurchaseOrderIssued> context) =>
         handler.HandleAsync(context.Message, context.CancellationToken);
 }
 
-internal sealed class PurchaseOrderClosedConsumer(PurchaseOrderClosedHandler handler) : IConsumer<PurchaseOrderClosed>
+internal sealed class PurchaseOrderClosedConsumer(IIntegrationEventHandler<PurchaseOrderClosed> handler) : IConsumer<PurchaseOrderClosed>
 {
     public Task Consume(ConsumeContext<PurchaseOrderClosed> context) =>
         handler.HandleAsync(context.Message, context.CancellationToken);
