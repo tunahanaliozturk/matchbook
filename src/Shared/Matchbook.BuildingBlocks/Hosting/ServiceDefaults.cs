@@ -37,7 +37,7 @@ public static class ServiceDefaults
         builder.Services.AddExceptionHandler<ProblemMapping>();
         builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ProblemAuthorizationResults>();
         builder.Services.AddHealthChecks();
-        builder.Services.AddOpenApi();
+        builder.Services.AddOpenApi(static options => options.AddDocumentTransformer<BearerSecurityScheme>());
         builder.Services.Configure<JsonOptions>(static options =>
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 

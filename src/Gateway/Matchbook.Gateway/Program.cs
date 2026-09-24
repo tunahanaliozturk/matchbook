@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Matchbook.BuildingBlocks.Hosting;
 using Matchbook.BuildingBlocks.Security;
 using Microsoft.AspNetCore.RateLimiting;
+using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,23 @@ builder.AddMatchbookDefaults("gateway");
 // validates it again: the gateway is a convenience at the edge, not the only lock.
 builder.Services.AddAuthorizationBuilder().AddPolicy("authenticated", static policy => policy.RequireAuthenticatedUser());
 
-builder.Services.AddReverseProxy().LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+// Services answer a create with a Location relative to themselves (/requisitions/{id}). Behind the gateway that
+// path lives under /api, so the header is rewritten on the way out rather than teaching five services where
+// they are mounted.
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .AddTransforms(static transforms => transforms.AddResponseTransform(static transform =>
+    {
+        IHeaderDictionary headers = transform.HttpContext.Response.Headers;
+        string? location = headers.Location;
+
+        if (location is { Length: > 0 } && location.StartsWith('/') && !location.StartsWith("/api/", StringComparison.Ordinal))
+        {
+            headers.Location = "/api" + location;
+        }
+
+        return ValueTask.CompletedTask;
+    }));
 
 // Per caller, not per address: behind a corporate proxy a whole office shares one address, and one person's
 // runaway script should not lock out their colleagues.
