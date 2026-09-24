@@ -1,8 +1,9 @@
 using System.ComponentModel;
-using Matchbook.Suppliers.Application;
+using Matchbook.Suppliers.Application.Features.Suppliers;
+using Matchbook.Suppliers.Application.Features.Suppliers.Queries.ListSuppliers;
 using Domain = Matchbook.Suppliers.Domain;
 
-namespace Matchbook.Suppliers.Api;
+namespace Matchbook.Suppliers.Api.Features.Suppliers;
 
 // Response bodies. They mirror the application's views on purpose: the HTTP contract is what a generated client
 // depends on, and it should change only when someone edits this file, not whenever the domain renames a state.

@@ -1,7 +1,7 @@
 using System.Net;
 using Matchbook.Contracts.Suppliers;
 using Matchbook.SharedKernel;
-using Matchbook.Suppliers.Api;
+using Matchbook.Suppliers.Api.Features.Suppliers;
 using Matchbook.Testing;
 using Npgsql;
 

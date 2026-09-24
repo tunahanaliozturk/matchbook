@@ -2,7 +2,7 @@ using Matchbook.SharedKernel;
 using Matchbook.Suppliers.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Matchbook.Suppliers.Application;
+namespace Matchbook.Suppliers.Application.Features.Suppliers;
 
 internal static class SuppliersQueries
 {

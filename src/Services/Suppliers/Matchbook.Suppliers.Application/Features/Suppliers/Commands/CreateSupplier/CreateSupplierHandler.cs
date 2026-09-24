@@ -1,12 +1,9 @@
 using Matchbook.SharedKernel;
+using Matchbook.Suppliers.Application.Common;
 using Matchbook.Suppliers.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Matchbook.Suppliers.Application;
-
-/// <param name="Id">Optional. Sending the same id again returns the supplier it created instead of a second one.</param>
-public sealed record CreateSupplier(
-    Guid? Id, string LegalName, string TaxId, string CountryCode, int PaymentTermsDays, string ContactEmail);
+namespace Matchbook.Suppliers.Application.Features.Suppliers.Commands.CreateSupplier;
 
 /// <summary>
 /// A supplier admin records a new supplier as a draft. Nothing is published until it is activated. A tax id
@@ -14,10 +11,13 @@ public sealed record CreateSupplier(
 /// request that loses a race gets the same answer as one that arrives second.
 /// </summary>
 public sealed class CreateSupplierHandler(ISuppliersDb db, SupplierMetrics metrics, TimeProvider clock)
+    : ICommandHandler<CreateSupplierCommand, SupplierView>
 {
-    public async Task<SupplierView> HandleAsync(CreateSupplier command, Actor actor, CancellationToken cancellationToken)
+    public async Task<SupplierView> HandleAsync(CreateSupplierCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+
+        Actor actor = command.Actor;
 
         try
         {

@@ -1,8 +1,11 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using Matchbook.Suppliers.Application;
+using Matchbook.SharedKernel;
+using Matchbook.Suppliers.Application.Features.Suppliers.Commands.ChangeSupplierDetails;
+using Matchbook.Suppliers.Application.Features.Suppliers.Commands.CreateSupplier;
+using Matchbook.Suppliers.Application.Features.Suppliers.Commands.ProposeBankAccount;
 
-namespace Matchbook.Suppliers.Api;
+namespace Matchbook.Suppliers.Api.Features.Suppliers;
 
 // Request bodies. The attributes check only shape: a field is present. Whether a value is acceptable (a tax id,
 // an IBAN, 0 to 120 days) is the domain's call, answered with 422 and a code.
@@ -19,8 +22,8 @@ public sealed record CreateSupplierRequest(
     [Required] int? PaymentTermsDays,
     [Required] string? ContactEmail)
 {
-    internal CreateSupplier ToCommand() =>
-        new(Id, LegalName!, TaxId!, CountryCode!, PaymentTermsDays!.Value, ContactEmail!);
+    internal CreateSupplierCommand ToCommand(Actor actor) =>
+        new(Id, LegalName!, TaxId!, CountryCode!, PaymentTermsDays!.Value, ContactEmail!, actor);
 }
 
 public sealed record ChangeSupplierDetailsRequest(
@@ -30,8 +33,8 @@ public sealed record ChangeSupplierDetailsRequest(
     [Required] int? PaymentTermsDays,
     [Required] string? ContactEmail)
 {
-    internal ChangeSupplierDetails ToCommand(Guid supplierId) =>
-        new(supplierId, LegalName!, TaxId!, CountryCode!, PaymentTermsDays!.Value, ContactEmail!);
+    internal ChangeSupplierDetailsCommand ToCommand(Guid supplierId, Actor actor) =>
+        new(supplierId, LegalName!, TaxId!, CountryCode!, PaymentTermsDays!.Value, ContactEmail!, actor);
 }
 
 public sealed record ReasonRequest([Required] string? Reason);
@@ -45,5 +48,6 @@ public sealed record ProposeBankAccountRequest(
     [property: Description("As the bank has it, at most 70 characters.")]
     [Required] string? AccountHolder)
 {
-    internal ProposeBankAccount ToCommand(Guid supplierId) => new(supplierId, Id, Iban!, Bic!, AccountHolder!);
+    internal ProposeBankAccountCommand ToCommand(Guid supplierId, Actor actor) =>
+        new(supplierId, Id, Iban!, Bic!, AccountHolder!, actor);
 }

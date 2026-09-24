@@ -2,7 +2,7 @@ using Matchbook.SharedKernel;
 using Matchbook.Suppliers.Domain;
 using Contract = Matchbook.Contracts.Suppliers;
 
-namespace Matchbook.Suppliers.Application;
+namespace Matchbook.Suppliers.Application.Features.Suppliers;
 
 internal static class SupplierSnapshot
 {

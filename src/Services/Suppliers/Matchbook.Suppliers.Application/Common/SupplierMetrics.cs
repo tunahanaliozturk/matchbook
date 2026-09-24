@@ -1,6 +1,6 @@
 using System.Diagnostics.Metrics;
 
-namespace Matchbook.Suppliers.Application;
+namespace Matchbook.Suppliers.Application.Common;
 
 /// <summary>
 /// The service's business outcomes on the <c>Matchbook.Suppliers</c> meter. A rise in approved bank account
