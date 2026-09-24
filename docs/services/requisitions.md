@@ -85,8 +85,9 @@ overtaken message is normal, not a failure.
 | `CostCentreChanged` | `requisitions-cost-centre-changed` | the message's `Version` is higher than the copy's | ignored |
 | `SupplierChanged` | `requisitions-supplier-changed` | the message's `Version` is higher than the copy's | ignored |
 
-The consumers in `Infrastructure/Messaging` are adapters that call the Application handler and nothing else.
-The outbox and inbox around them, the retries and the error queues come from `AddMatchbookMessaging`.
+The consumers in `Infrastructure/Messaging` are adapters that call the event's handler in
+`Application/IntegrationEvents` (an `IIntegrationEventHandler<TEvent>`) and nothing else. The outbox and inbox
+around them, the retries and the error queues come from `AddMatchbookMessaging`.
 
 Two copies of one message processed at once both pass the status check, and both try to write. The
 requisition's `xmin` makes the second writer fail with a concurrency conflict; MassTransit retries it, it

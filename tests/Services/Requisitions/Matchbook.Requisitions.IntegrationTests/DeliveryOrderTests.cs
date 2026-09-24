@@ -3,7 +3,7 @@ using Matchbook.Contracts.Budgets;
 using Matchbook.Contracts.Purchasing;
 using Matchbook.Contracts.Requisitions;
 using Matchbook.Contracts.Suppliers;
-using Matchbook.Requisitions.Application.UseCases;
+using Matchbook.Requisitions.Application.Features.Requisitions;
 using Matchbook.Requisitions.Domain;
 using Matchbook.Requisitions.Infrastructure;
 using Matchbook.Testing;

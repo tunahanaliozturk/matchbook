@@ -3,6 +3,7 @@ using Matchbook.BuildingBlocks.Http;
 using Matchbook.BuildingBlocks.Messaging;
 using Matchbook.BuildingBlocks.Persistence;
 using Matchbook.Requisitions.Application;
+using Matchbook.Requisitions.Application.Common;
 using Matchbook.Requisitions.Domain;
 using Matchbook.Requisitions.Infrastructure.Configurations;
 using Matchbook.Requisitions.Infrastructure.Messaging;

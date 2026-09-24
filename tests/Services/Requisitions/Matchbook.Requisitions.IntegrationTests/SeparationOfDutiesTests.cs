@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Matchbook.Requisitions.Api;
-using Matchbook.Requisitions.Application.UseCases;
+using Matchbook.Requisitions.Api.Features.Requisitions;
+using Matchbook.Requisitions.Application.Features.Requisitions;
 using Matchbook.Requisitions.Domain;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;
