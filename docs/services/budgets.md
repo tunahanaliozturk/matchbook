@@ -264,7 +264,8 @@ benchmark, and are not a throughput claim.
   body, and a cost centre may have been renamed between the first request and its retry; its version 1 cannot
   be rebuilt from the current row. Rejected: deriving the response from the created resource (wrong after any
   change) and a hash of the request alone (proves a repeat, cannot answer it). The stored command is compared as
-  a record, so `100` and `100.00` are the same amount.
+  a record, so `100` and `100.00` are the same amount. The person acting is not part of it: a repeat gets the
+  first answer whoever sends it.
 - **The client's id becomes the resource's id where there is one**: the budget's id, and the allotment change's
   document id in the ledger. The ledger's unique key then refuses a double-applied change even if the
   idempotency row were somehow lost.

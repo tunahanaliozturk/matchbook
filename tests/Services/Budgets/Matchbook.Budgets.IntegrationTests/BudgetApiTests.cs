@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Matchbook.Budgets.Application;
-using Matchbook.Budgets.Application.Budgets;
-using Matchbook.Budgets.Application.CostCentres;
+using Matchbook.Budgets.Application.Common;
+using Matchbook.Budgets.Application.Features.Budgets;
+using Matchbook.Budgets.Application.Features.CostCentres;
 using Matchbook.Testing;
 using Microsoft.EntityFrameworkCore;
 
