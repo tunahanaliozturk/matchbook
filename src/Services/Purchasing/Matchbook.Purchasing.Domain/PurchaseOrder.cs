@@ -197,12 +197,21 @@ public sealed class PurchaseOrder
     }
 
     /// <summary>
-    /// Records goods received against the issued order. Quantities for the same line are added together. Either
-    /// every line of the receipt is taken or none is.
+    /// Records goods received against the issued order. Either every line of the receipt is taken or none is.
     /// </summary>
-    public GoodsReceipt RecordReceipt(Actor receiver, IReadOnlyList<LineQuantity> quantities, DateTimeOffset now)
+    /// <remarks>
+    /// The contract says a line appears at most once per receipt. Repeats are still added together rather than
+    /// refused, so a client that splits a line across two entries gets the receipt it meant.
+    /// </remarks>
+    /// <param name="receiver">The person recording it.</param>
+    /// <param name="receiptId">The receipt's id, chosen by the client so a retried request can be recognised.</param>
+    /// <param name="quantities">What arrived, per line.</param>
+    /// <param name="now">When it was recorded.</param>
+    public GoodsReceipt RecordReceipt(
+        Actor receiver, Guid receiptId, IReadOnlyList<LineQuantity> quantities, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(quantities);
+        ArgumentOutOfRangeException.ThrowIfEqual(receiptId, Guid.Empty);
         RequireRole(receiver, Roles.Receiver, "purchase_order.not_a_receiver");
         RequireStatus(PurchaseOrderStatus.Issued, "purchase_order.not_issued", "Goods are received only on an issued order.");
 
@@ -245,7 +254,8 @@ public sealed class PurchaseOrder
             line.Receive(quantity);
         }
 
-        return GoodsReceipt.Record(Id, receiver.Id, received.Select(static r => new LineQuantity(r.Line.LineNumber, r.Quantity)), now);
+        return GoodsReceipt.Record(
+            receiptId, Id, receiver.Id, received.Select(static r => new LineQuantity(r.Line.LineNumber, r.Quantity)), now);
     }
 
     /// <summary>

@@ -6,14 +6,16 @@ namespace Matchbook.Purchasing.UnitTests;
 
 public sealed class ReceivingTests
 {
+    private static readonly Guid ReceiptId = Guid.CreateVersion7();
+
     [Fact]
     public void A_receiver_records_what_arrived_and_the_receipt_says_who_when_and_how_much()
     {
         PurchaseOrder order = Orders.Issued();
 
-        GoodsReceipt receipt = order.RecordReceipt(People.Rosa, [new LineQuantity(1, 4m), new LineQuantity(2, 1.5m)], Orders.Now);
+        GoodsReceipt receipt = order.RecordReceipt(People.Rosa, ReceiptId, [new LineQuantity(1, 4m), new LineQuantity(2, 1.5m)], Orders.Now);
 
-        receipt.Id.ShouldNotBe(Guid.Empty);
+        receipt.Id.ShouldBe(ReceiptId);
         receipt.PurchaseOrderId.ShouldBe(order.Id);
         receipt.ReceivedBy.ShouldBe(People.Rosa.Id);
         receipt.ReceivedAt.ShouldBe(Orders.Now);
@@ -55,7 +57,7 @@ public sealed class ReceivingTests
         PurchaseOrder order = Orders.Issued();
 
         ShouldBeRefused(
-            () => order.RecordReceipt(People.BrunoAsReceiver, [new LineQuantity(1, 1m)], Orders.Now),
+            () => order.RecordReceipt(People.BrunoAsReceiver, Guid.CreateVersion7(), [new LineQuantity(1, 1m)], Orders.Now),
             "purchase_order.receiver_is_buyer",
             ViolationKind.Forbidden);
         order.Line(1).ReceivedQuantity.ShouldBe(0m);
@@ -66,7 +68,7 @@ public sealed class ReceivingTests
     {
         PurchaseOrder order = Orders.Issued();
 
-        order.RecordReceipt(People.BethAsReceiver, [new LineQuantity(1, 1m)], Orders.Now);
+        order.RecordReceipt(People.BethAsReceiver, Guid.CreateVersion7(), [new LineQuantity(1, 1m)], Orders.Now);
 
         order.Line(1).ReceivedQuantity.ShouldBe(1m);
     }
@@ -74,7 +76,7 @@ public sealed class ReceivingTests
     [Fact]
     public void Only_a_receiver_may_record_a_receipt() =>
         ShouldBeRefused(
-            () => Orders.Issued().RecordReceipt(People.Beth, [new LineQuantity(1, 1m)], Orders.Now),
+            () => Orders.Issued().RecordReceipt(People.Beth, Guid.CreateVersion7(), [new LineQuantity(1, 1m)], Orders.Now),
             "purchase_order.not_a_receiver",
             ViolationKind.Forbidden);
 
