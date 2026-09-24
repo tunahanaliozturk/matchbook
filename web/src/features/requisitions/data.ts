@@ -38,21 +38,31 @@ export type {
 // Query keys, in one place, so a mutation can say exactly what it made stale.
 export const requisitionKeys = {
     all: ["requisitions"] as const,
-    list: (limit: number) => ["requisitions", "list", limit] as const,
+    list: (filter: RequisitionFilter, limit: number) =>
+        ["requisitions", "list", filter, limit] as const,
     one: (id: string) => ["requisitions", "one", id] as const,
     costCentres: ["requisitions", "cost-centres"] as const,
     suppliers: ["requisitions", "suppliers"] as const,
 };
 
 /** The requisitions the caller may read, newest first, a page at a time along the service's keyset cursor. */
-export function useRequisitionList(limit = 50) {
+/** Only requisitions in one of these statuses; empty for all of them. */
+export interface RequisitionFilter {
+    status?: RequisitionStatus[];
+}
+
+export function useRequisitionList(filter: MaybeRefOrGetter<RequisitionFilter> = {}, limit = 50) {
     return useInfiniteQuery({
-        queryKey: requisitionKeys.list(limit),
+        queryKey: computed(() => requisitionKeys.list(toValue(filter), limit)),
         initialPageParam: undefined as number | undefined,
         queryFn: async ({ pageParam, signal }) =>
             (
                 await listRequisitions({
-                    query: { limit, ...(pageParam === undefined ? {} : { after: pageParam }) },
+                    query: {
+                        ...toValue(filter),
+                        limit,
+                        ...(pageParam === undefined ? {} : { after: pageParam }),
+                    },
                     signal,
                 })
             ).data,

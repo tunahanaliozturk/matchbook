@@ -195,6 +195,7 @@ export type ListRequisitionsData = {
     body?: never;
     path?: never;
     query?: {
+        status?: Array<RequisitionStatus>;
         after?: number;
         limit?: number;
     };

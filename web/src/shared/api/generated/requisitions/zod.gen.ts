@@ -174,6 +174,7 @@ export const zListApprovalsQuery = z.object({
 export const zListApprovalsResponse = zPageOfRequisitionSummary;
 
 export const zListRequisitionsQuery = z.object({
+    status: z.array(zRequisitionStatus).optional(),
     after: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
     limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
 });

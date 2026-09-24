@@ -39,9 +39,9 @@ export const listApprovals = <ThrowOnError extends boolean = true>(options?: Opt
 });
 
 /**
- * The requisitions the caller may read, newest first.
+ * The requisitions the caller may read, newest first, optionally of some statuses.
  *
- * A requester sees their own; approvers and the auditor see all. Pass the previous page's nextCursor as after; limit is 1 to 200, default 50.
+ * A requester sees their own; approvers and the auditor see all. Repeat status to allow several. Pass the previous page's nextCursor as after; limit is 1 to 200, default 50.
  */
 export const listRequisitions = <ThrowOnError extends boolean = true>(options?: Options<ListRequisitionsData, ThrowOnError>): RequestResult<ListRequisitionsResponses, ListRequisitionsErrors, ThrowOnError> => (options?.client ?? client).get<ListRequisitionsResponses, ListRequisitionsErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

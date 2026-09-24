@@ -12,6 +12,7 @@ using Matchbook.Requisitions.Application.Features.Requisitions.Queries.GetRequis
 using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListCostCentreOptions;
 using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListRequisitions;
 using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListSupplierOptions;
+using Matchbook.Requisitions.Domain;
 using Matchbook.SharedKernel;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -42,8 +43,8 @@ internal static class RequisitionsEndpoints
         requisitions.MapGet("", ListAsync)
             .RequireAuthorization(Policies.Read)
             .WithName("ListRequisitions")
-            .WithSummary("The requisitions the caller may read, newest first.")
-            .WithDescription("A requester sees their own; approvers and the auditor see all. Pass the previous page's nextCursor as after; limit is 1 to 200, default 50.")
+            .WithSummary("The requisitions the caller may read, newest first, optionally of some statuses.")
+            .WithDescription("A requester sees their own; approvers and the auditor see all. Repeat status to allow several. Pass the previous page's nextCursor as after; limit is 1 to 200, default 50.")
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         // A requester may read neither Budgets nor Suppliers, so the form's choices come from this service's copies.
@@ -122,12 +123,13 @@ internal static class RequisitionsEndpoints
     }
 
     private static async Task<Ok<Page<RequisitionSummary>>> ListAsync(
+        RequisitionStatus[]? status,
         long? after,
         int? limit,
         ClaimsPrincipal user,
         IQueryHandler<ListRequisitionsQuery, Page<RequisitionSummary>> handler,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(await handler.HandleAsync(new ListRequisitionsQuery(after, limit, user.ToActor()), cancellationToken));
+        TypedResults.Ok(await handler.HandleAsync(new ListRequisitionsQuery(status, after, limit, user.ToActor()), cancellationToken));
 
     private static async Task<Ok<IReadOnlyList<CostCentreOption>>> ListCostCentreOptionsAsync(
         ClaimsPrincipal user,

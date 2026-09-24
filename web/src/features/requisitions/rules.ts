@@ -100,8 +100,11 @@ export function budgetRefusal(reason: string | null, costCentre: string): string
 }
 
 /** A draft to finish, or a refusal to read: what a requester's inbox brings back to them. */
-export const waitsOnRequester = (status: RequisitionStatus): boolean =>
-    status === "Draft" || status === "BudgetRejected" || status === "Rejected";
+export const waitingOnRequester: readonly RequisitionStatus[] = [
+    "Draft",
+    "BudgetRejected",
+    "Rejected",
+];
 
 /** Who did what: a person by name, or the service that reported it, since other services' facts name nobody. */
 export function actorOf(entry: TimelineEntryView, me: string | undefined): string {

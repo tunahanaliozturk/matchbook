@@ -7,17 +7,11 @@ import MoneyText from "@/shared/ui/MoneyText.vue";
 import StatusPill from "@/shared/ui/StatusPill.vue";
 
 import { useRequisitionList, type RequisitionStatus } from "./data";
-import { waitsOnRequester } from "./rules";
+import { waitingOnRequester } from "./rules";
 import { requisitionTone } from "./tones";
 
-// The list page's first page, from the same cache. ponytail: filtered from the newest fifty, because GET
-// /requisitions takes no status filter; a status parameter there if drafts older than that go unnoticed.
-const list = useRequisitionList();
-const items = computed(() =>
-    (list.data.value?.pages[0]?.items ?? [])
-        .filter((requisition) => waitsOnRequester(requisition.status))
-        .slice(0, 5),
-);
+const list = useRequisitionList({ status: [...waitingOnRequester] }, 5);
+const items = computed(() => list.data.value?.pages[0]?.items ?? []);
 
 const why: Partial<Record<RequisitionStatus, string>> = {
     Draft: "A draft, not submitted yet",
@@ -33,7 +27,7 @@ const why: Partial<Record<RequisitionStatus, string>> = {
         :key-of="(requisition) => requisition.id"
         :loading="list.isPending.value"
         :error="list.error.value"
-        empty="None of your recent requisitions is a draft or was turned down."
+        empty="None of your requisitions is a draft or was turned down."
         :more="{ name: 'requisitions' }"
     >
         <template #default="{ item }">

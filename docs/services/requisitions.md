@@ -30,7 +30,7 @@ them in order.
 | Method and path | Roles | Answers |
 |---|---|---|
 | `POST /requisitions` | requester | 201, the draft. Idempotent on an optional `id` in the body. |
-| `GET /requisitions?after=&limit=` | requester, approver, finance-approver, cfo, auditor | 200, a page, newest first: a requester's own, everyone's for the others |
+| `GET /requisitions?status=&after=&limit=` | requester, approver, finance-approver, cfo, auditor | 200, a page, newest first: a requester's own, everyone's for the others |
 | `GET /requisitions/cost-centres` | requester | 200, the active cost centres the caller does not manage, from the local copy, in code order, at most 200 |
 | `GET /requisitions/suppliers` | requester, approver, finance-approver, cfo, auditor | 200, the active suppliers, from the local copy, in name order, at most 200 |
 | `GET /requisitions/{id}` | as above | 200, with lines, route and timeline; 404 for a requisition the caller may not read |

@@ -15,13 +15,18 @@ public sealed class ListRequisitionsHandler(IRequisitionsDb db)
     public async Task<Page<RequisitionSummary>> HandleAsync(ListRequisitionsQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        (long? after, int? limit, Actor actor) = query;
+        (IReadOnlyList<RequisitionStatus>? statuses, long? after, int? limit, Actor actor) = query;
         int take = Page.Clamp(limit);
 
         IQueryable<Requisition> visible = db.Requisitions.AsNoTracking();
         if (!Requisition.SeesEveryRequisition(actor))
         {
             visible = visible.Where(requisition => requisition.RequesterId == actor.Id);
+        }
+
+        if (statuses is { Count: > 0 })
+        {
+            visible = visible.Where(requisition => statuses.Contains(requisition.Status));
         }
 
         if (after is { } cursor)

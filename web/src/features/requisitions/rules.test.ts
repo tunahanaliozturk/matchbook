@@ -3,14 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Person, Role } from "@/auth/roles";
 
 import type { RequisitionView, StepView, TimelineEntryView } from "./data";
-import {
-    actorOf,
-    budgetRefusal,
-    decisionFor,
-    routeFor,
-    stepPeople,
-    waitsOnRequester,
-} from "./rules";
+import { actorOf, budgetRefusal, decisionFor, routeFor, stepPeople } from "./rules";
 
 const rita = "a0000000-0000-4000-8000-000000000001";
 const mark = "a0000000-0000-4000-8000-000000000002";
@@ -154,17 +147,6 @@ describe("budgetRefusal", () => {
             "No budget is set for ENG-PLATFORM this year.",
         );
         expect(budgetRefusal("frozen", "ENG-PLATFORM")).toBe("frozen");
-    });
-});
-
-describe("waitsOnRequester", () => {
-    it("brings back drafts and refusals, not what others are still deciding or what is done", () => {
-        expect(waitsOnRequester("Draft")).toBe(true);
-        expect(waitsOnRequester("BudgetRejected")).toBe(true);
-        expect(waitsOnRequester("Rejected")).toBe(true);
-        expect(waitsOnRequester("PendingApproval")).toBe(false);
-        expect(waitsOnRequester("Cancelled")).toBe(false);
-        expect(waitsOnRequester("Ordered")).toBe(false);
     });
 });
 

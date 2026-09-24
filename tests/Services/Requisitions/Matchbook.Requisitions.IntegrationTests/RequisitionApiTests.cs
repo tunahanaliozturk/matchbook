@@ -202,6 +202,21 @@ public sealed class RequisitionApiTests(RequisitionsFixture fixture) : IClassFix
     }
 
     [Fact]
+    public async Task A_requesters_list_keeps_only_the_statuses_asked_for()
+    {
+        Actor requester = TestUsers.Stranger(Roles.Requester);
+        RequisitionView draft = await fixture.CreateAsync(requester, 1_000m);
+        RequisitionView withdrawn = await fixture.CreateAsync(requester, 1_000m);
+        await (await fixture.PostAsync(requester, withdrawn.Id, "cancel")).ReadAsync<RequisitionView>();
+
+        Page<RequisitionSummary> drafts = await ListAsync(requester, "?status=Draft");
+        Page<RequisitionSummary> either = await ListAsync(requester, "?status=Draft&status=Cancelled");
+
+        drafts.Items.Select(static item => item.Id).ShouldBe([draft.Id]);
+        either.Items.Select(static item => item.Id).ShouldBe([withdrawn.Id, draft.Id]);
+    }
+
+    [Fact]
     public async Task The_form_offers_the_active_cost_centres_the_requester_does_not_manage()
     {
         Actor requester = TestUsers.Stranger(Roles.Requester);
