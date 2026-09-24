@@ -11,6 +11,10 @@
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="contracts.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- Every host, so the test can read what each compiled layer of each service really references. -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\Services\Suppliers\Matchbook.Suppliers.Api\Matchbook.Suppliers.Api.csproj" />
