@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
 using MassTransit.EntityFrameworkCoreIntegration;
 using Matchbook.Budgets.Application;
-using Matchbook.Budgets.Application.Budgets;
-using Matchbook.Budgets.Application.CostCentres;
+using Matchbook.Budgets.Application.Features.Budgets;
+using Matchbook.Budgets.Application.Features.CostCentres;
 using Matchbook.Budgets.Domain;
 using Matchbook.Budgets.Infrastructure;
 using Matchbook.Contracts.Budgets;

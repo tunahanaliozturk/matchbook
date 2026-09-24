@@ -1,4 +1,4 @@
-using Matchbook.Budgets.Application.Budgets;
+using Matchbook.Budgets.Application.Features.Budgets;
 using Matchbook.Budgets.Domain;
 using Matchbook.Contracts.Budgets;
 using Matchbook.Contracts.Payables;
