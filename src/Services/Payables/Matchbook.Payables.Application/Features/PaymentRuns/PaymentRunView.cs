@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Matchbook.Payables.Domain;
 using Matchbook.Payables.Domain.PaymentRuns;
 
@@ -49,6 +50,34 @@ public sealed record PaymentRunView(
                 creditor.Status,
                 creditor.DropReason))]);
     }
+}
+
+/// <summary>A payment run as a list shows it: its figures, without the suppliers.</summary>
+public sealed record PaymentRunSummary(
+    Guid Id,
+    DateOnly ExecutionDate,
+    PaymentRunStatus Status,
+    Guid DraftedBy,
+    DateTimeOffset DraftedAt,
+    Guid? ReleasedBy,
+    DateTimeOffset? ReleasedAt,
+    int ItemCount,
+    decimal Total,
+    int PaidCount,
+    decimal PaidTotal)
+{
+    internal static readonly Expression<Func<PaymentRun, PaymentRunSummary>> Projection = run => new PaymentRunSummary(
+        run.Id,
+        run.ExecutionDate,
+        run.Status,
+        run.DraftedBy,
+        run.DraftedAt,
+        run.ReleasedBy,
+        run.ReleasedAt,
+        run.ItemCount,
+        run.Total,
+        run.PaidCount,
+        run.PaidTotal);
 }
 
 public sealed record PaymentRunCreditorView(

@@ -20,6 +20,6 @@ public sealed class AcceptPriceVarianceHandler(IPayablesDb db, InvoiceMatcher ma
         await matcher.MatchAsync(order, invoice, now, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-        return InvoiceView.From(invoice);
+        return await db.ViewAsync(invoice, cancellationToken);
     }
 }

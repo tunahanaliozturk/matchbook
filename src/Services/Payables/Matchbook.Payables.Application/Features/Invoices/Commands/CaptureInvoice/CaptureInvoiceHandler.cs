@@ -23,7 +23,7 @@ public sealed class CaptureInvoiceHandler(IPayablesDb db, InvoiceMatcher matcher
             && await db.Invoices.AsNoTracking().SingleOrDefaultAsync(existing => existing.Id == requestedId, cancellationToken) is { } earlier)
         {
             return IsSameCapture(earlier, command)
-                ? InvoiceView.From(earlier)
+                ? await db.ViewAsync(earlier, cancellationToken)
                 : throw new BusinessRuleException(
                     "request.id_reused",
                     "An invoice with this id was already captured with different content.",
@@ -91,7 +91,7 @@ public sealed class CaptureInvoiceHandler(IPayablesDb db, InvoiceMatcher matcher
         await transaction.CommitAsync(cancellationToken);
 
         metrics.Captured();
-        return InvoiceView.From(invoice);
+        return await db.ViewAsync(invoice, cancellationToken);
     }
 
     private static bool IsSameCapture(Invoice earlier, CaptureInvoiceCommand command) =>

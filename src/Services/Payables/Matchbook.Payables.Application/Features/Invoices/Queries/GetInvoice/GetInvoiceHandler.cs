@@ -1,3 +1,4 @@
+using Matchbook.Payables.Domain.Invoices;
 using Matchbook.SharedKernel;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ public sealed class GetInvoiceHandler(IPayablesDb db) : IQueryHandler<GetInvoice
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        return InvoiceView.From(await db.Invoices.AsNoTracking().SingleOrNotFoundAsync(query.InvoiceId, cancellationToken));
+        Invoice invoice = await db.Invoices.AsNoTracking().SingleOrNotFoundAsync(query.InvoiceId, cancellationToken);
+        return await db.ViewAsync(invoice, cancellationToken);
     }
 }

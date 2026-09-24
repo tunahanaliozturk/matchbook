@@ -30,6 +30,6 @@ public sealed class ListInvoiceExceptionsHandler(IPayablesDb db) : IQueryHandler
             .Select(InvoiceSummary.Projection)
             .ToListAsync(cancellationToken);
 
-        return Paging.ToPage(rows, take, summary => summary.Id);
+        return Paging.ToPage(await db.NamedAsync(rows, cancellationToken), take, summary => summary.Id);
     }
 }

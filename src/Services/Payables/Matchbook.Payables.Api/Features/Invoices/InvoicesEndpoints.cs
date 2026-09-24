@@ -6,6 +6,8 @@ using Matchbook.Payables.Application.Features.Invoices.Commands.AcceptPriceVaria
 using Matchbook.Payables.Application.Features.Invoices.Commands.CaptureInvoice;
 using Matchbook.Payables.Application.Features.Invoices.Commands.ClearSuspectedDuplicate;
 using Matchbook.Payables.Application.Features.Invoices.Queries.GetInvoice;
+using Matchbook.Payables.Application.Features.Invoices.Queries.ListBillablePurchaseOrders;
+using Matchbook.Payables.Application.Features.Invoices.Queries.ListBillableSuppliers;
 using Matchbook.Payables.Application.Features.Invoices.Queries.ListInvoiceExceptions;
 using Matchbook.Payables.Application.Features.Invoices.Queries.ListInvoices;
 using Matchbook.Payables.Domain.Invoices;
@@ -38,6 +40,22 @@ internal static class InvoicesEndpoints
             .RequireAuthorization(Policies.ReadInvoices)
             .WithName("ListInvoiceExceptions")
             .WithSummary("Invoices waiting for an approver: suspected duplicates and price variances, oldest first")
+            .ProducesValidationProblem()
+            .ProducesRefusals();
+
+        // Reference data for the capture form: a clerk cannot read Suppliers or Purchasing, so Payables serves what it
+        // holds of them (ADR 0009).
+        invoices.MapGet("/suppliers", BillableSuppliers)
+            .RequireAuthorization(Policies.CaptureInvoices)
+            .WithName("ListBillableSuppliers")
+            .WithSummary("Suppliers with an order an invoice can still bill, newest first, for capturing an invoice")
+            .ProducesValidationProblem()
+            .ProducesRefusals();
+
+        invoices.MapGet("/purchase-orders", BillablePurchaseOrders)
+            .RequireAuthorization(Policies.CaptureInvoices)
+            .WithName("ListBillablePurchaseOrders")
+            .WithSummary("Issued orders an invoice can still bill, with their lines, newest first, optionally for one supplier")
             .ProducesValidationProblem()
             .ProducesRefusals();
 
@@ -91,6 +109,21 @@ internal static class InvoicesEndpoints
         IQueryHandler<ListInvoiceExceptionsQuery, Page<InvoiceSummary>> handler,
         CancellationToken cancellationToken) =>
         TypedResults.Ok(await handler.HandleAsync(new ListInvoiceExceptionsQuery(after, limit ?? 0), cancellationToken));
+
+    private static async Task<Ok<Page<BillableSupplier>>> BillableSuppliers(
+        Guid? after,
+        int? limit,
+        IQueryHandler<ListBillableSuppliersQuery, Page<BillableSupplier>> handler,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await handler.HandleAsync(new ListBillableSuppliersQuery(after, limit ?? 0), cancellationToken));
+
+    private static async Task<Ok<Page<BillablePurchaseOrder>>> BillablePurchaseOrders(
+        Guid? supplierId,
+        Guid? after,
+        int? limit,
+        IQueryHandler<ListBillablePurchaseOrdersQuery, Page<BillablePurchaseOrder>> handler,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await handler.HandleAsync(new ListBillablePurchaseOrdersQuery(supplierId, after, limit ?? 0), cancellationToken));
 
     private static async Task<Ok<InvoiceView>> Get(
         Guid id,

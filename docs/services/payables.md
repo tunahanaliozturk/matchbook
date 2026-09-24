@@ -173,10 +173,13 @@ rule and answers with a code (`invoice.self_approval`, `payment_run.same_treasur
 | `POST` | `/invoices` | ap-clerk | 201, the invoice as matched |
 | `GET` | `/invoices?status=&after=&limit=` | ap-clerk, ap-approver, treasurer, auditor | 200, a page, newest first |
 | `GET` | `/invoices/exceptions?after=&limit=` | as above | 200, suspected duplicates and price variances, oldest first |
-| `GET` | `/invoices/{id}` | as above | 200, with the reason for its state |
+| `GET` | `/invoices/{id}` | as above | 200, with the reason for its state and the supplier's and order's names |
+| `GET` | `/invoices/suppliers?after=&limit=` | ap-clerk | 200, suppliers with an order an invoice can still bill, newest first |
+| `GET` | `/invoices/purchase-orders?supplierId=&after=&limit=` | ap-clerk | 200, those orders with their lines, newest first |
 | `POST` | `/invoices/{id}/accept-price-variance` | ap-clerk, ap-approver (the domain allows only an approver who did not capture it) | 200 |
 | `POST` | `/invoices/{id}/clear-suspected-duplicate` | as above | 200 |
 | `POST` | `/payment-runs` | treasurer | 201, the draft |
+| `GET` | `/payment-runs?status=&after=&limit=` | treasurer, auditor | 200, a page, newest first, without the suppliers |
 | `GET` | `/payment-runs/{id}` | treasurer, auditor | 200, per supplier, IBANs masked |
 | `POST` | `/payment-runs/{id}/release` | treasurer (not the one who drafted it) | 200 |
 | `POST` | `/payment-runs/{id}/cancel` | treasurer | 200 |
@@ -286,3 +289,18 @@ payable.
   than the first treasurer's download.
 - **Metrics are counted in the application layer**, where the outcomes are known, on `System.Diagnostics.Metrics`.
   Rejected alternative: decorators in Infrastructure, which would have to reconstruct what the handler already knows.
+
+## Reads for the console
+
+- **The capture form is served from Payables' own copies.** An AP clerk cannot read Suppliers or Purchasing, so
+  `/invoices/suppliers` and `/invoices/purchase-orders` answer from the local copies the match uses (ADR 0009). They
+  offer only orders an invoice can still bill: issued, and neither cancelled nor completed. A short-closed order
+  stays, because what was received before the close is still owed. Rejected alternative: every supplier Payables
+  knows, which buries the few with an open order among every supplier ever activated. Only clerks may read them,
+  under the capture policy: nobody else captures, and a treasurer has no need of order prices.
+- **Invoice views name the supplier and the order** from the local copies, and say null until the event has arrived.
+  The names are looked up when the invoice is read, one query per page for lists, not copied onto the invoice, so a
+  supplier renamed in Suppliers is renamed here too.
+- **Payment runs are listed newest first**, optionally by status, without their suppliers. The console finds the
+  drafts waiting for a second treasurer from this list. No index beyond the primary key: a company drafts a handful
+  of runs a week.
