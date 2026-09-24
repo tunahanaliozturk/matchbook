@@ -81,8 +81,8 @@ const invoices = (count: number) => (count === 1 ? "1 invoice" : `${count} invoi
         >
             Run for {{ formatDay(run.executionDate) }}
             <template #detail
-                >{{ invoices(run.itemCount) }}, drafted by {{ who(run.draftedBy) }}
-                {{ formatMoment(run.draftedAt) }}</template
+                >{{ invoices(run.itemCount) }}, drafted {{ formatMoment(run.draftedAt) }} by
+                {{ who(run.draftedBy) }}</template
             >
             <template #trailing>
                 <MoneyText :amount="run.status === 'Released' ? run.paidTotal : run.total" />

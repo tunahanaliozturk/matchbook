@@ -190,7 +190,11 @@ async function saveFile() {
         <UiSheet
             v-model:open="cancelling"
             title="Cancel payment run"
-            :description="`Nothing has been paid. The run's ${invoices(current.itemCount)} become payable again and can go into a new run.`"
+            :description="
+                current.itemCount === 1
+                    ? 'Nothing has been paid. Its invoice becomes payable again and can go into a new run.'
+                    : `Nothing has been paid. Its ${current.itemCount} invoices become payable again and can go into a new run.`
+            "
         >
             <InlineNotice v-if="cancel.error.value" tone="error">{{
                 describe(cancel.error.value)

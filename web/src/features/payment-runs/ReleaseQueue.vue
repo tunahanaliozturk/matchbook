@@ -4,7 +4,7 @@ import { computed } from "vue";
 import WorkQueue from "@/features/inbox/WorkQueue.vue";
 import { nameOf } from "@/auth/people";
 import { useSession } from "@/auth/session";
-import { formatDay } from "@/shared/format";
+import { formatDay, formatMoment } from "@/shared/format";
 import ListRow from "@/shared/ui/ListRow.vue";
 import MoneyText from "@/shared/ui/MoneyText.vue";
 
@@ -37,7 +37,8 @@ const items = computed(() =>
                 Run for {{ formatDay(item.executionDate) }}
                 <template #detail
                     >{{ item.itemCount === 1 ? "1 invoice" : `${item.itemCount} invoices` }},
-                    drafted by {{ nameOf(item.draftedBy, person?.id) }}</template
+                    drafted {{ formatMoment(item.draftedAt) }} by
+                    {{ nameOf(item.draftedBy, person?.id) }}</template
                 >
                 <template #trailing><MoneyText :amount="item.total" /></template>
             </ListRow>

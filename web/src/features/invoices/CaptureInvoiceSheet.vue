@@ -205,11 +205,12 @@ async function save() {
                     </select>
                 </FormField>
             </div>
-            <div class="pair">
+            <!-- The invoice's own header, in the order it is printed: number, date, total. -->
+            <div class="trio">
                 <FormField
                     v-slot="{ id: fieldId, describedBy, invalid }"
                     label="Invoice number"
-                    hint="As printed. INV-0042 and inv42 count as the same number."
+                    hint="As printed. INV-0042 and inv42 are one number."
                     :errors="errorsFor('supplierInvoiceNumber')"
                 >
                     <input
@@ -225,7 +226,7 @@ async function save() {
                 <FormField
                     v-slot="{ id: fieldId, describedBy, invalid }"
                     label="Invoice date"
-                    hint="The supplier's payment terms run from this date."
+                    hint="Payment terms run from this date."
                     :errors="errorsFor('invoiceDate')"
                 >
                     <input
@@ -235,6 +236,26 @@ async function save() {
                         :aria-invalid="invalid"
                         type="date"
                         required
+                    />
+                </FormField>
+                <FormField
+                    v-slot="{ id: fieldId, describedBy, invalid }"
+                    label="Total"
+                    hint="As printed. It has to equal the billed lines."
+                    :errors="totalErrors"
+                >
+                    <input
+                        :id="fieldId"
+                        v-model.number="form.total"
+                        :aria-describedby="describedBy"
+                        :aria-invalid="invalid"
+                        class="figure"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        required
+                        @input="totalTyped = true"
                     />
                 </FormField>
             </div>
@@ -300,29 +321,6 @@ async function save() {
                     {{ errorsFor("lines").join(" ") }}
                 </p>
             </div>
-
-            <div class="pair">
-                <FormField
-                    v-slot="{ id: fieldId, describedBy, invalid }"
-                    label="Total"
-                    hint="The total printed on the invoice. It has to equal the sum of the billed lines."
-                    :errors="totalErrors"
-                >
-                    <input
-                        :id="fieldId"
-                        v-model.number="form.total"
-                        :aria-describedby="describedBy"
-                        :aria-invalid="invalid"
-                        class="figure"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputmode="decimal"
-                        required
-                        @input="totalTyped = true"
-                    />
-                </FormField>
-            </div>
         </form>
         <template #footer>
             <UiButton @click="open = false">Cancel</UiButton>
@@ -346,6 +344,12 @@ async function save() {
 .pair {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+}
+
+.trio {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
     gap: var(--space-4);
 }
 
@@ -400,9 +404,17 @@ async function save() {
     outline-offset: 0;
 }
 
-/* The total is a figure too, so it reads from the right like the amounts above it. */
+/* The total is a figure too, so it reads from the right like the amounts below it. Figures are typed, not
+   stepped, so the browser's spin buttons go. */
 .form input.figure {
     font-variant-numeric: tabular-nums;
     text-align: right;
+    appearance: textfield;
+}
+
+.form input.figure::-webkit-inner-spin-button,
+.form input.figure::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
 }
 </style>
