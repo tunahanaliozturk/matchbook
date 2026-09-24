@@ -70,7 +70,7 @@ public sealed class PurchaseOrderCommitmentRequestedHandler(
 
         // The guard is "amount <= available + reservation": the entry releases the reservation and commits the
         // order's amount, so it consumes only the difference.
-        if (!await db.TryApplyWithinAvailableAsync(entry, cancellationToken))
+        if (!await db.TryApplyWithinAvailableAsync(entry, "commitment", cancellationToken))
         {
             decimal available = await db.AvailableAsync(budget.Id, cancellationToken) + held;
             await RefuseAsync(message, order, FundsRefusal.InsufficientFunds, available, cancellationToken);
@@ -80,6 +80,7 @@ public sealed class PurchaseOrderCommitmentRequestedHandler(
         order.Commit(budget.Id, message.Attempt, message.Amount);
         reservation?.HandOver();
         db.Ledger.Add(entry);
+        BudgetsMetrics.CommitmentGranted();
         await PublishCommittedAsync(message, message.Amount, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -110,6 +111,7 @@ public sealed class PurchaseOrderCommitmentRequestedHandler(
         }
 
         logger.CommitmentRefused(message.Amount, message.PurchaseOrderId, message.Attempt, refusal);
+        BudgetsMetrics.CommitmentRefused(refusal);
         await events.PublishAsync(
             new FundsCommitmentRejected(
                 message.PurchaseOrderId,

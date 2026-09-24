@@ -55,10 +55,11 @@ public sealed class RequisitionSubmittedHandler(
         DateTimeOffset now = clock.GetUtcNow();
         LedgerEntry entry = LedgerEntry.Record(
             budget.Id, message.RequisitionId, LedgerStep.Reserve, movement, message.OccurredAt, now);
-        if (await db.TryApplyWithinAvailableAsync(entry, cancellationToken))
+        if (await db.TryApplyWithinAvailableAsync(entry, "reservation", cancellationToken))
         {
             db.Reservations.Add(RequisitionReservation.Hold(message.RequisitionId, budget.Id, message.Amount));
             db.Ledger.Add(entry);
+            BudgetsMetrics.ReservationGranted();
             await events.PublishAsync(
                 new FundsReserved(message.RequisitionId, message.CostCentreCode, message.FiscalYear, message.Amount, now),
                 cancellationToken);
@@ -82,6 +83,7 @@ public sealed class RequisitionSubmittedHandler(
     {
         logger.ReservationRefused(
             message.Amount, message.RequisitionId, message.CostCentreCode, message.FiscalYear, refusal);
+        BudgetsMetrics.ReservationRefused(refusal);
         return events.PublishAsync(
             new FundsReservationRejected(
                 message.RequisitionId,

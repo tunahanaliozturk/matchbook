@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matchbook.Budgets.Application.Budgets;
 
-public sealed record OpenBudget(string CostCentreCode, int FiscalYear, decimal Allotted);
+/// <param name="Id">Optional. Becomes the budget's id; repeating it returns the first result.</param>
+public sealed record OpenBudget(Guid? Id, string CostCentreCode, int FiscalYear, decimal Allotted);
 
 public sealed class OpenBudgetHandler(IBudgetsDb db, TimeProvider clock)
 {
@@ -12,6 +13,11 @@ public sealed class OpenBudgetHandler(IBudgetsDb db, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(actor);
+        if (await db.ReplayAsync<OpenBudget, BudgetView>(command.Id, command, cancellationToken) is { } replay)
+        {
+            return replay;
+        }
+
         CostCentre costCentre = await db.CostCentres.AsNoTracking()
             .SingleOrDefaultAsync(c => c.Code == command.CostCentreCode, cancellationToken)
             ?? throw NotFound.ForCostCentre(command.CostCentreCode);
@@ -26,10 +32,12 @@ public sealed class OpenBudgetHandler(IBudgetsDb db, TimeProvider clock)
 
         DateTimeOffset now = clock.GetUtcNow();
         (Budget budget, LedgerEntry opening) = Budget.Open(
-            Guid.CreateVersion7(now), costCentre, command.FiscalYear, command.Allotted, actor.Id, now);
+            command.Id ?? Guid.CreateVersion7(now), costCentre, command.FiscalYear, command.Allotted, actor.Id, now);
+        var opened = BudgetView.From(budget);
         db.Budgets.Add(budget);
         db.Ledger.Add(opening);
+        db.Remember(command.Id, command, opened, now);
         await db.SaveChangesAsync(cancellationToken);
-        return BudgetView.From(budget);
+        return opened;
     }
 }

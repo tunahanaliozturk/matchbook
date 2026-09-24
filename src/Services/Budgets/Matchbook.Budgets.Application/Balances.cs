@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Matchbook.Budgets.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,14 +18,17 @@ internal static class Balances
     /// COMMITTED), so two grants can never both spend the same headroom. The condition is
     /// <see cref="Budget.CanAfford"/> written for the database.
     /// </summary>
+    /// <param name="grant">What is being granted, for the latency histogram.</param>
     public static async Task<bool> TryApplyWithinAvailableAsync(
-        this IBudgetsDb db, LedgerEntry entry, CancellationToken cancellationToken)
+        this IBudgetsDb db, LedgerEntry entry, string grant, CancellationToken cancellationToken)
     {
         decimal needed = entry.Movement.Consumes;
+        long started = Stopwatch.GetTimestamp();
         int updated = await AddAsync(
             db.Budgets.Where(b => b.Id == entry.BudgetId && b.Allotted - b.Reserved - b.Committed - b.Actual >= needed),
             entry.Movement,
             cancellationToken);
+        BudgetsMetrics.GrantTook(Stopwatch.GetElapsedTime(started), grant, granted: updated == 1);
         return updated == 1;
     }
 
@@ -37,6 +41,15 @@ internal static class Balances
             throw new InvalidOperationException($"Budget {entry.BudgetId} does not exist.");
         }
     }
+
+    /// <summary>
+    /// Available as it is now. Inside the transaction that just updated the row, that includes the update.
+    /// </summary>
+    public static Task<decimal> AvailableAsync(this IBudgetsDb db, Guid budgetId, CancellationToken cancellationToken) =>
+        db.Budgets
+            .Where(b => b.Id == budgetId)
+            .Select(b => b.Allotted - b.Reserved - b.Committed - b.Actual)
+            .SingleAsync(cancellationToken);
 
     private static Task<int> AddAsync(IQueryable<Budget> budget, Movement movement, CancellationToken cancellationToken) =>
         budget.ExecuteUpdateAsync(

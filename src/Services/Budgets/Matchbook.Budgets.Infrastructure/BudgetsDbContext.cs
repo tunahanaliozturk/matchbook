@@ -18,6 +18,8 @@ public sealed class BudgetsDbContext(DbContextOptions<BudgetsDbContext> options)
 
     public DbSet<LedgerEntry> Ledger => Set<LedgerEntry>();
 
+    public DbSet<IdempotentRequest> Requests => Set<IdempotentRequest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -25,7 +27,8 @@ public sealed class BudgetsDbContext(DbContextOptions<BudgetsDbContext> options)
             .ApplyConfiguration(new BudgetConfiguration())
             .ApplyConfiguration(new RequisitionReservationConfiguration())
             .ApplyConfiguration(new OrderCommitmentConfiguration())
-            .ApplyConfiguration(new LedgerEntryConfiguration());
+            .ApplyConfiguration(new LedgerEntryConfiguration())
+            .ApplyConfiguration(new IdempotentRequestConfiguration());
 
         // The outbox and inbox live in this database so an event and the change that caused it commit together.
         modelBuilder.AddTransactionalOutboxEntities();
