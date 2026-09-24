@@ -67,7 +67,7 @@ First release. Everything below is covered by the test suites or by a published 
 - Read endpoints the console needed, each answered from the service's own copies so no role gains access to
   another service: cost centres and suppliers for the requisition form, billable suppliers and orders for invoice
   capture, supplier names on orders and invoices, a list of payment runs, a status filter on requisitions and an
-  `awaitingGoods` filter on purchase orders. All are additive; no existing field changed.
+  `awaitingGoods` filter on purchase orders.
 
 ### Code layout
 
