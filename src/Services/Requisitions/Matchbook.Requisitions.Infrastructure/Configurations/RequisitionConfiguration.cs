@@ -17,7 +17,10 @@ internal sealed class RequisitionConfiguration : IEntityTypeConfiguration<Requis
             string statuses = string.Join(", ", Enum.GetNames<RequisitionStatus>().Select(static name => $"'{name}'"));
             table.HasCheckConstraint("ck_requisitions_status", $"status IN ({statuses})");
             table.HasCheckConstraint("ck_requisitions_amount", "amount >= 0");
-            table.HasCheckConstraint("ck_requisitions_fiscal_year", "status = 'Draft' OR fiscal_year IS NOT NULL");
+            // A draft cancelled before submission never reached Budgets and has no fiscal year either.
+            table.HasCheckConstraint(
+                "ck_requisitions_fiscal_year",
+                "fiscal_year IS NOT NULL OR status IN ('Draft', 'Cancelled')");
             table.HasCheckConstraint(
                 "ck_requisitions_current_step",
                 "(status = 'PendingApproval') = (current_step IS NOT NULL)");

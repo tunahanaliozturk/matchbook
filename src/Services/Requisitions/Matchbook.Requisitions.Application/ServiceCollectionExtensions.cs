@@ -8,8 +8,8 @@ namespace Matchbook.Requisitions.Application;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers every handler, scoped like the DbContext they share. The host registers
-    /// <see cref="IRequisitionsDb"/> and the event publisher.
+    /// Registers every handler, scoped like the DbContext they share. Infrastructure registers what they depend
+    /// on: <see cref="IRequisitionsDb"/>, the event publisher and <see cref="RequisitionMetrics"/>.
     /// </summary>
     public static IServiceCollection AddRequisitionsApplication(this IServiceCollection services)
     {
@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ApproveRequisitionHandler>();
         services.AddScoped<RejectRequisitionHandler>();
         services.AddScoped<GetRequisitionHandler>();
-        services.AddScoped<ListMyRequisitionsHandler>();
+        services.AddScoped<ListRequisitionsHandler>();
         services.AddScoped<ListMyApprovalsHandler>();
 
         services.AddScoped<CostCentreChangedHandler>();

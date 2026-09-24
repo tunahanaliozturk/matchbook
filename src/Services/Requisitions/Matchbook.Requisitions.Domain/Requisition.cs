@@ -98,16 +98,18 @@ public sealed class Requisition
 
     public IReadOnlyList<TimelineEntry> Timeline => _timeline;
 
-    public static Requisition Draft(long serial, Actor requester, RequisitionDetails details, DateTimeOffset now)
+    /// <param name="id">The client's own id when it sent one, so that a retried create finds the first.</param>
+    public static Requisition Draft(Guid id, long serial, Actor requester, RequisitionDetails details, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(requester);
+        ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(serial);
 
         Checked valid = Validate(details, now);
         string number = string.Create(CultureInfo.InvariantCulture, $"REQ-{now.UtcDateTime.Year}-{serial:D6}");
 
         Requisition requisition = new(
-            Guid.CreateVersion7(now),
+            id,
             number,
             serial,
             requester.Id,
@@ -125,17 +127,39 @@ public sealed class Requisition
     }
 
     /// <summary>
-    /// Requesters see their own; anyone who approves, and the auditor, see all of them. Everyone else is told
-    /// the requisition does not exist.
+    /// Anyone who approves, and the auditor, read every requisition. Everyone else reads only their own and is
+    /// told the others do not exist.
     /// </summary>
-    public bool IsVisibleTo(Actor actor)
+    public static bool SeesEveryRequisition(Actor actor)
     {
         ArgumentNullException.ThrowIfNull(actor);
-        return actor.Id == RequesterId
-            || actor.IsIn(Roles.Approver)
+        return actor.IsIn(Roles.Approver)
             || actor.IsIn(Roles.FinanceApprover)
             || actor.IsIn(Roles.Cfo)
             || actor.IsIn(Roles.Auditor);
+    }
+
+    public bool IsVisibleTo(Actor actor) => SeesEveryRequisition(actor) || actor.Id == RequesterId;
+
+    /// <summary>
+    /// Whether a create request from <paramref name="requester"/> with <paramref name="details"/> asks for this
+    /// requisition as it stands, read the way <see cref="Draft"/> reads it. A retried create gets the first
+    /// one's result only when it does.
+    /// </summary>
+    public bool IsRepeatOf(Actor requester, RequisitionDetails details)
+    {
+        ArgumentNullException.ThrowIfNull(requester);
+        ArgumentNullException.ThrowIfNull(details);
+
+        return requester.Id == RequesterId
+            && NormaliseCode(details.CostCentreCode) == CostCentreCode
+            && details.SupplierId == SupplierId
+            && details.Justification?.Trim() == Justification
+            && details.NeededBy == NeededBy
+            && details.Lines is { } lines
+            && lines.Count == _lines.Count
+            && lines.Select(static (input, index) => (input, number: index + 1))
+                .All(pair => _lines.Single(line => line.LineNumber == pair.number).Matches(pair.input));
     }
 
     /// <summary>
@@ -357,7 +381,7 @@ public sealed class Requisition
     {
         ArgumentNullException.ThrowIfNull(details);
 
-        string costCentreCode = details.CostCentreCode?.Trim().ToUpperInvariant() ?? string.Empty;
+        string costCentreCode = NormaliseCode(details.CostCentreCode);
         if (costCentreCode.Length == 0 || costCentreCode.Length > CostCentre.MaxCodeLength)
         {
             throw Invalid(RequisitionCodes.CostCentreInvalid, "A requisition needs a cost centre code.");
@@ -474,6 +498,8 @@ public sealed class Requisition
         Revision++;
         _timeline.Add(new TimelineEntry(Guid.CreateVersion7(at), Revision, at, action, actorId, actorName, detail));
     }
+
+    private static string NormaliseCode(string? code) => code?.Trim().ToUpperInvariant() ?? string.Empty;
 
     private static BusinessRuleException Invalid(string code, string message) => new(code, message, ViolationKind.Invalid);
 

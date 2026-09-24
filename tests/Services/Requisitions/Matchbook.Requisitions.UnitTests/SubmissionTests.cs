@@ -74,7 +74,7 @@ public sealed class SubmissionTests
     public void The_manager_of_the_cost_centre_cannot_submit_against_it()
     {
         // Nobody else could take the manager step, and the manager may not approve their own requisition.
-        Requisition requisition = Requisition.Draft(1, A.Manager, A.Details(), A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Manager, A.Details(), A.Now);
 
         A.Refused(
             () => requisition.Submit(A.Manager, A.CostCentre(managerId: A.Manager.Id), A.Supplier(), A.Now),

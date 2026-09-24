@@ -4,7 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matchbook.Requisitions.Application.UseCases;
 
-public sealed class SubmitRequisitionHandler(IRequisitionsDb db, IEventPublisher publisher, TimeProvider time)
+public sealed class SubmitRequisitionHandler(
+    IRequisitionsDb db,
+    IEventPublisher publisher,
+    RequisitionMetrics metrics,
+    TimeProvider time)
 {
     public async Task<RequisitionView> HandleAsync(Actor actor, Guid requisitionId, CancellationToken cancellationToken)
     {
@@ -21,6 +25,7 @@ public sealed class SubmitRequisitionHandler(IRequisitionsDb db, IEventPublisher
 
         await publisher.PublishAsync(OutgoingEvents.Submitted(requisition, now), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        metrics.Submitted();
         return RequisitionView.From(requisition);
     }
 }

@@ -37,7 +37,7 @@ internal static class A
     public static Supplier Supplier(bool isActive = true) => new(SupplierId, 1, "Acme Office Supplies BV", isActive);
 
     public static Requisition Draft(decimal amount = 3_000m) =>
-        Requisition.Draft(1, Requester, DetailsWorth(amount), Now);
+        Requisition.Draft(Guid.CreateVersion7(), 1, Requester, DetailsWorth(amount), Now);
 
     public static Requisition Submitted(decimal amount = 3_000m)
     {

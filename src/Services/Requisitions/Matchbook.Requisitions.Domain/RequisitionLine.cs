@@ -76,6 +76,13 @@ public sealed class RequisitionLine
         return new RequisitionLine(lineNumber, description, input.Quantity, unitOfMeasure, input.UnitPrice, amount);
     }
 
+    /// <summary>Whether <paramref name="input"/> describes this line, read the way drafting reads it.</summary>
+    internal bool Matches(LineInput input) =>
+        input.Description?.Trim() == Description
+        && input.UnitOfMeasure?.Trim() == UnitOfMeasure
+        && input.Quantity == Quantity
+        && input.UnitPrice == UnitPrice;
+
     internal void CopyFrom(RequisitionLine other)
     {
         Description = other.Description;

@@ -6,6 +6,9 @@ namespace Matchbook.Requisitions.Infrastructure.Configurations;
 
 internal sealed class ApprovalStepConfiguration : IEntityTypeConfiguration<ApprovalStep>
 {
+    /// <summary>The unique index that holds "one person decides at most one step" in the database.</summary>
+    public const string OneDecisionPerPerson = "ix_approval_steps_requisition_id_decided_by";
+
     private const int NameLength = 16;
 
     public void Configure(EntityTypeBuilder<ApprovalStep> builder)
@@ -26,7 +29,7 @@ internal sealed class ApprovalStepConfiguration : IEntityTypeConfiguration<Appro
 
         // Separation of duties, held by the database as well: one person decides at most one step of a
         // requisition. Pending steps have no decider, and Postgres treats those NULLs as distinct.
-        builder.HasIndex("RequisitionId", nameof(ApprovalStep.DecidedBy)).IsUnique();
+        builder.HasIndex("RequisitionId", nameof(ApprovalStep.DecidedBy)).IsUnique().HasDatabaseName(OneDecisionPerPerson);
 
         // A manager's own queue: the steps waiting on them by name.
         builder.HasIndex(static step => step.ApproverId).HasFilter("decision = 'Pending'");

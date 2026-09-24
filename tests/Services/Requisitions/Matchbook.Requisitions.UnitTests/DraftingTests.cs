@@ -8,7 +8,7 @@ public sealed class DraftingTests
     [Fact]
     public void A_draft_belongs_to_its_requester_and_waits_as_a_draft()
     {
-        Requisition requisition = Requisition.Draft(42, A.Requester, A.Details(), A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 42, A.Requester, A.Details(), A.Now);
 
         requisition.Status.ShouldBe(RequisitionStatus.Draft);
         requisition.RequesterId.ShouldBe(A.Requester.Id);
@@ -23,7 +23,7 @@ public sealed class DraftingTests
     [InlineData(999_999, "REQ-2026-999999")]
     [InlineData(1_234_567, "REQ-2026-1234567")]
     public void The_number_is_the_year_of_creation_and_the_serial(long serial, string number) =>
-        Requisition.Draft(serial, A.Requester, A.Details(), A.Now).Number.ShouldBe(number);
+        Requisition.Draft(Guid.CreateVersion7(), serial, A.Requester, A.Details(), A.Now).Number.ShouldBe(number);
 
     [Fact]
     public void The_year_in_the_number_is_the_utc_year()
@@ -31,13 +31,13 @@ public sealed class DraftingTests
         DateTimeOffset newYearsEveInNewYork = new(2026, 12, 31, 20, 0, 0, TimeSpan.FromHours(-5));
         RequisitionDetails details = A.Details() with { NeededBy = new DateOnly(2027, 1, 15) };
 
-        Requisition.Draft(7, A.Requester, details, newYearsEveInNewYork).Number.ShouldBe("REQ-2027-000007");
+        Requisition.Draft(Guid.CreateVersion7(), 7, A.Requester, details, newYearsEveInNewYork).Number.ShouldBe("REQ-2027-000007");
     }
 
     [Fact]
     public void The_amount_is_the_sum_of_the_line_amounts()
     {
-        Requisition requisition = Requisition.Draft(
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(),
             1, A.Requester, A.Details(A.Line(2m, 1_500m), A.Line(3.5m, 12.3456m), A.Line(1m, 0m)), A.Now);
 
         requisition.Lines.Select(line => line.Amount).ShouldBe([3_000m, 43.21m, 0m]);
@@ -47,7 +47,7 @@ public sealed class DraftingTests
     [Fact]
     public void A_line_amount_rounds_half_away_from_zero()
     {
-        Requisition requisition = Requisition.Draft(1, A.Requester, A.Details(A.Line(1m, 0.125m)), A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(A.Line(1m, 0.125m)), A.Now);
 
         requisition.Amount.ShouldBe(0.13m);
     }
@@ -55,7 +55,7 @@ public sealed class DraftingTests
     [Fact]
     public void Lines_are_numbered_from_one_in_the_order_given()
     {
-        Requisition requisition = Requisition.Draft(
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(),
             1, A.Requester, A.Details(A.Line(description: "Laptop"), A.Line(description: "Dock"), A.Line(description: "Bag")), A.Now);
 
         requisition.Lines.Select(line => (line.LineNumber, line.Description)).ShouldBe([(1, "Laptop"), (2, "Dock"), (3, "Bag")]);
@@ -70,7 +70,7 @@ public sealed class DraftingTests
             Justification = "  Two new engineers  ",
         };
 
-        Requisition requisition = Requisition.Draft(1, A.Requester, details, A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, details, A.Now);
 
         requisition.CostCentreCode.ShouldBe("ENG-PLATFORM");
         requisition.Justification.ShouldBe("Two new engineers");
@@ -85,7 +85,7 @@ public sealed class DraftingTests
     {
         LineInput[] lines = [.. Enumerable.Repeat(A.Line(), count)];
 
-        Requisition.Draft(1, A.Requester, A.Details(lines), A.Now).Lines.Count.ShouldBe(count);
+        Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(lines), A.Now).Lines.Count.ShouldBe(count);
     }
 
     [Theory]
@@ -95,7 +95,7 @@ public sealed class DraftingTests
     {
         RequisitionDetails details = A.Details() with { Lines = [.. Enumerable.Repeat(A.Line(), count)] };
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, details, A.Now), RequisitionCodes.LineCountInvalid, ViolationKind.Invalid);
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, details, A.Now), RequisitionCodes.LineCountInvalid, ViolationKind.Invalid);
     }
 
     [Theory]
@@ -107,7 +107,7 @@ public sealed class DraftingTests
     {
         LineInput line = A.Line(quantity: decimal.Parse(quantity, System.Globalization.CultureInfo.InvariantCulture));
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, A.Details(A.Line(), line), A.Now), RequisitionCodes.LineInvalid, ViolationKind.Invalid)
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(A.Line(), line), A.Now), RequisitionCodes.LineInvalid, ViolationKind.Invalid)
             .Message.ShouldContain("Line 2");
     }
 
@@ -119,13 +119,13 @@ public sealed class DraftingTests
     {
         LineInput line = A.Line(unitPrice: decimal.Parse(unitPrice, System.Globalization.CultureInfo.InvariantCulture));
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, A.Details(line), A.Now), RequisitionCodes.LineInvalid, ViolationKind.Invalid);
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(line), A.Now), RequisitionCodes.LineInvalid, ViolationKind.Invalid);
     }
 
     [Fact]
     public void The_finest_quantity_and_price_the_columns_hold_are_accepted()
     {
-        Requisition requisition = Requisition.Draft(1, A.Requester, A.Details(A.Line(0.001m, 0.0001m)), A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(A.Line(0.001m, 0.0001m)), A.Now);
 
         requisition.Lines[0].Quantity.ShouldBe(0.001m);
         requisition.Lines[0].UnitPrice.ShouldBe(0.0001m);
@@ -137,7 +137,7 @@ public sealed class DraftingTests
     [InlineData("   ")]
     public void A_line_needs_a_description(string description) =>
         A.Refused(
-            () => Requisition.Draft(1, A.Requester, A.Details(A.Line(description: description)), A.Now),
+            () => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(A.Line(description: description)), A.Now),
             RequisitionCodes.LineInvalid,
             ViolationKind.Invalid);
 
@@ -146,7 +146,7 @@ public sealed class DraftingTests
     {
         LineInput line = A.Line(description: new string('x', RequisitionLine.MaxDescriptionLength + 1));
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, A.Details(line), A.Now), RequisitionCodes.LineInvalid, ViolationKind.Invalid);
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(line), A.Now), RequisitionCodes.LineInvalid, ViolationKind.Invalid);
     }
 
     [Theory]
@@ -154,7 +154,7 @@ public sealed class DraftingTests
     [InlineData("A unit of measure that is far too long")]
     public void A_line_needs_a_short_unit_of_measure(string unitOfMeasure) =>
         A.Refused(
-            () => Requisition.Draft(1, A.Requester, A.Details(new LineInput("Laptop", 1m, unitOfMeasure, 10m)), A.Now),
+            () => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(new LineInput("Laptop", 1m, unitOfMeasure, 10m)), A.Now),
             RequisitionCodes.LineInvalid,
             ViolationKind.Invalid);
 
@@ -163,7 +163,7 @@ public sealed class DraftingTests
     {
         LineInput line = A.Line(RequisitionLine.MaxQuantity, RequisitionLine.MaxUnitPrice);
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, A.Details(line), A.Now), RequisitionCodes.AmountTooLarge, ViolationKind.Invalid);
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(line), A.Now), RequisitionCodes.AmountTooLarge, ViolationKind.Invalid);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class DraftingTests
         // Each line comes to 10^15, which fits; fifty of them do not.
         LineInput[] lines = [.. Enumerable.Repeat(A.Line(1_000m, 1_000_000_000_000m), Requisition.MaxLines)];
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, A.Details(lines), A.Now), RequisitionCodes.AmountTooLarge, ViolationKind.Invalid);
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(lines), A.Now), RequisitionCodes.AmountTooLarge, ViolationKind.Invalid);
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public sealed class DraftingTests
     {
         RequisitionDetails details = A.Details() with { NeededBy = DateOnly.FromDateTime(A.Now.UtcDateTime).AddDays(-1) };
 
-        A.Refused(() => Requisition.Draft(1, A.Requester, details, A.Now), RequisitionCodes.NeededByInPast, ViolationKind.Invalid);
+        A.Refused(() => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, details, A.Now), RequisitionCodes.NeededByInPast, ViolationKind.Invalid);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public sealed class DraftingTests
     {
         RequisitionDetails details = A.Details() with { NeededBy = DateOnly.FromDateTime(A.Now.UtcDateTime) };
 
-        Requisition.Draft(1, A.Requester, details, A.Now).NeededBy.ShouldBe(details.NeededBy);
+        Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, details, A.Now).NeededBy.ShouldBe(details.NeededBy);
     }
 
     [Theory]
@@ -197,14 +197,14 @@ public sealed class DraftingTests
     [InlineData("ENG-PLATFORM-AND-MORE")]
     public void A_requisition_needs_a_cost_centre_code(string code) =>
         A.Refused(
-            () => Requisition.Draft(1, A.Requester, A.Details() with { CostCentreCode = code }, A.Now),
+            () => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details() with { CostCentreCode = code }, A.Now),
             RequisitionCodes.CostCentreInvalid,
             ViolationKind.Invalid);
 
     [Fact]
     public void A_requisition_needs_a_supplier() =>
         A.Refused(
-            () => Requisition.Draft(1, A.Requester, A.Details() with { SupplierId = Guid.Empty }, A.Now),
+            () => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details() with { SupplierId = Guid.Empty }, A.Now),
             RequisitionCodes.SupplierInvalid,
             ViolationKind.Invalid);
 
@@ -213,7 +213,7 @@ public sealed class DraftingTests
     [InlineData(Requisition.MaxJustificationLength + 1)]
     public void A_requisition_needs_a_justification_that_fits(int length) =>
         A.Refused(
-            () => Requisition.Draft(1, A.Requester, A.Details() with { Justification = new string('x', length) }, A.Now),
+            () => Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details() with { Justification = new string('x', length) }, A.Now),
             RequisitionCodes.JustificationInvalid,
             ViolationKind.Invalid);
 }

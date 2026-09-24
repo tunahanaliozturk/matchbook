@@ -150,7 +150,7 @@ public sealed class SeparationOfDutiesProperties
         /// </summary>
         public Requisition PendingApproval()
         {
-            Requisition requisition = Requisition.Draft(1, Requester, A.DetailsWorth(Amount), A.Now);
+            Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, Requester, A.DetailsWorth(Amount), A.Now);
             requisition.Submit(Requester, A.CostCentre(), A.Supplier(), A.Now);
             requisition.RecordFundsReserved(ManagerId, A.Now);
             return requisition;
