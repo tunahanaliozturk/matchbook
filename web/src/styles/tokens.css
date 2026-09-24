@@ -139,11 +139,11 @@
         --positive-tint: rgb(48 209 88 / 16%);
         --caution: #ffb340;
         --caution-tint: rgb(255 159 10 / 18%);
-        --negative: #ff6961;
+        --negative: #ff8078; /* #ff6961 is 4.0:1 on its tint over a grouped row */
         --negative-tint: rgb(255 69 58 / 18%);
         --neutral: #aeaeb2; /* #a1a1a6 is 4.1:1 on its own tint */
         --neutral-tint: rgb(142 142 147 / 18%);
-        --progress: #409cff;
+        --progress: #5aa9ff; /* #409cff is 4.0:1 on its tint over a grouped row */
         --progress-tint: rgb(10 132 255 / 18%);
 
         --ledger-actual: #0a84ff;
