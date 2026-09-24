@@ -6,6 +6,27 @@ export const zAcceptPriceVarianceRequest = z.object({
     reason: z.string().nullable()
 });
 
+export const zBillablePurchaseOrderLine = z.object({
+    lineNumber: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    quantity: z.number(),
+    unitPrice: z.number()
+});
+
+export const zBillablePurchaseOrder = z.object({
+    id: z.uuid(),
+    number: z.string(),
+    supplierId: z.uuid(),
+    issuedAt: z.iso.datetime({ offset: true }),
+    lines: z.array(zBillablePurchaseOrderLine)
+});
+
+export const zBillableSupplier = z.object({
+    id: z.uuid(),
+    legalName: z.string(),
+    isActive: z.boolean(),
+    paymentTermsDays: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
 export const zCaptureInvoiceLineRequest = z.object({
     lineNumber: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullable(),
     quantity: z.number().nullable(),
@@ -84,7 +105,8 @@ export const zInvoiceSummary = z.object({
     status: zInvoiceStatus,
     reason: zMatchReason.nullable(),
     capturedAt: z.iso.datetime({ offset: true }),
-    dueDate: z.iso.date().nullable()
+    dueDate: z.iso.date().nullable(),
+    supplierName: z.string().nullable()
 });
 
 export const zInvoiceView = z.object({
@@ -106,7 +128,19 @@ export const zInvoiceView = z.object({
     varianceAcceptanceReason: z.string().nullable(),
     matchedAt: z.iso.datetime({ offset: true }).nullable(),
     dueDate: z.iso.date().nullable(),
-    paidAt: z.iso.datetime({ offset: true }).nullable()
+    paidAt: z.iso.datetime({ offset: true }).nullable(),
+    supplierName: z.string().nullable(),
+    purchaseOrderNumber: z.string().nullable()
+});
+
+export const zPageOfBillablePurchaseOrder = z.object({
+    items: z.array(zBillablePurchaseOrder),
+    next: z.uuid().nullable()
+});
+
+export const zPageOfBillableSupplier = z.object({
+    items: z.array(zBillableSupplier),
+    next: z.uuid().nullable()
 });
 
 export const zPageOfInvoiceSummary = z.object({
@@ -131,6 +165,25 @@ export const zPaymentRunStatus = z.enum([
     'Released',
     'Cancelled'
 ]);
+
+export const zPaymentRunSummary = z.object({
+    id: z.uuid(),
+    executionDate: z.iso.date(),
+    status: zPaymentRunStatus,
+    draftedBy: z.uuid(),
+    draftedAt: z.iso.datetime({ offset: true }),
+    releasedBy: z.uuid().nullable(),
+    releasedAt: z.iso.datetime({ offset: true }).nullable(),
+    itemCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    total: z.number(),
+    paidCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    paidTotal: z.number()
+});
+
+export const zPageOfPaymentRunSummary = z.object({
+    items: z.array(zPaymentRunSummary),
+    next: z.uuid().nullable()
+});
 
 export const zPaymentRunView = z.object({
     id: z.uuid(),
@@ -187,6 +240,27 @@ export const zListInvoiceExceptionsQuery = z.object({
  */
 export const zListInvoiceExceptionsResponse = zPageOfInvoiceSummary;
 
+export const zListBillableSuppliersQuery = z.object({
+    after: z.uuid().optional(),
+    limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+});
+
+/**
+ * OK
+ */
+export const zListBillableSuppliersResponse = zPageOfBillableSupplier;
+
+export const zListBillablePurchaseOrdersQuery = z.object({
+    supplierId: z.uuid().optional(),
+    after: z.uuid().optional(),
+    limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+});
+
+/**
+ * OK
+ */
+export const zListBillablePurchaseOrdersResponse = zPageOfBillablePurchaseOrder;
+
 export const zGetInvoicePath = z.object({
     id: z.uuid()
 });
@@ -215,6 +289,17 @@ export const zClearSuspectedDuplicatePath = z.object({
  * OK
  */
 export const zClearSuspectedDuplicateResponse = zInvoiceView;
+
+export const zListPaymentRunsQuery = z.object({
+    status: zPaymentRunStatus.optional(),
+    after: z.uuid().optional(),
+    limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+});
+
+/**
+ * OK
+ */
+export const zListPaymentRunsResponse = zPageOfPaymentRunSummary;
 
 export const zDraftPaymentRunBody = zDraftPaymentRunRequest;
 

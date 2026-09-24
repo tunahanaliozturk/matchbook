@@ -27,4 +27,19 @@ export const queues: readonly Queue[] = [
         roles: ["supplier-admin"],
         component: defineAsyncComponent(() => import("@/features/suppliers/DraftQueue.vue")),
     },
+    {
+        key: "invoice-exceptions",
+        roles: ["ap-approver"],
+        component: defineAsyncComponent(() => import("@/features/invoices/ExceptionQueue.vue")),
+    },
+    {
+        key: "invoices-waiting",
+        roles: ["ap-clerk"],
+        component: defineAsyncComponent(() => import("@/features/invoices/WaitingQueue.vue")),
+    },
+    {
+        key: "payment-runs-to-release",
+        roles: ["treasurer"],
+        component: defineAsyncComponent(() => import("@/features/payment-runs/ReleaseQueue.vue")),
+    },
 ];

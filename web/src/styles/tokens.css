@@ -31,15 +31,18 @@
 
     /* Action */
     --accent: #0071e3;
-    --accent-hover: #0077ed;
-    --accent-pressed: #006edb;
+    /* Hover and press darken rather than lighten, so white text keeps 4.5:1 under the pointer too. */
+    --accent-hover: #006ad6;
+    --accent-pressed: #0062c9;
     --accent-text: #0066cc;
     --accent-soft: rgb(0 113 227 / 12%);
     --focus-ring: rgb(0 113 227 / 50%);
     --destructive: #d70015;
 
-    /* Meaning. Text colours are the darker variant of each system colour, so they hold 4.5:1 on their tint. */
-    --positive: #1b7a36;
+    /* Meaning. Text colours are the darker variant of each system colour, so they hold 4.5:1 on their tint. The tint
+       is translucent, and a pill sits on the window under a large title as well as on a grouped list, so each text
+       colour is chosen to hold on the tint over either surface, in both appearances. */
+    --positive: #177131;
     --positive-tint: rgb(52 199 89 / 14%);
     --caution: #a04700;
     --caution-tint: rgb(255 149 0 / 16%);
@@ -47,7 +50,7 @@
     --negative-tint: rgb(255 59 48 / 12%);
     --neutral: #636366;
     --neutral-tint: rgb(120 120 128 / 12%);
-    --progress: #0066cc;
+    --progress: #005ebd;
     --progress-tint: rgb(0 113 227 / 12%);
 
     /* The ledger capsule: what a budget has spent, promised and set aside, against what is left. */
@@ -127,22 +130,22 @@
         --field-border: rgb(255 255 255 / 18%);
 
         --accent: #0a6fdb; /* system blue is 3.6:1 under white text; this keeps 4.8:1 */
-        --accent-hover: #1a7ae6;
+        --accent-hover: #0b6ad4;
         --accent-pressed: #0a64c8;
         --accent-text: #409cff;
         --accent-soft: rgb(10 132 255 / 18%);
         --focus-ring: rgb(10 132 255 / 60%);
-        --destructive: #ff453a;
+        --destructive: #ff8a82; /* system red is 3.3:1 on a dark control; this keeps 5:1 */
 
         --positive: #30d158;
         --positive-tint: rgb(48 209 88 / 16%);
         --caution: #ffb340;
         --caution-tint: rgb(255 159 10 / 18%);
-        --negative: #ff6961;
+        --negative: #ff8680;
         --negative-tint: rgb(255 69 58 / 18%);
-        --neutral: #a1a1a6;
+        --neutral: #b4b4b9;
         --neutral-tint: rgb(142 142 147 / 18%);
-        --progress: #409cff;
+        --progress: #62afff;
         --progress-tint: rgb(10 132 255 / 18%);
 
         --ledger-actual: #0a84ff;
