@@ -226,12 +226,12 @@ integration tests search every text column of every table, the outbox included, 
 
 `PaymentRunScaleTests` seeds 5,000 payable invoices from 50 suppliers, then drafts, releases and downloads the run
 through the API, reading the file as a stream. On a Windows developer laptop with Postgres 18 and RabbitMQ in Docker
-Desktop, over two runs:
+Desktop, over three runs:
 
 | Step | Time |
 |---|---|
-| Draft (5,000 candidates read, 5,000 items inserted, one update of the invoices) | 1.8 to 2.4 s |
-| Release (four set-based statements, 5,000 `InvoicePaid` written to the outbox) | 2.1 to 3.1 s |
+| Draft (5,000 candidates read, 5,000 items inserted, one update of the invoices) | 1.5 to 2.4 s |
+| Release (four set-based statements, 5,000 `InvoicePaid` written to the outbox) | 2.0 to 3.1 s |
 | Download (2.9 MiB streamed from the database reader to the response) | 175 to 280 ms |
 
 The release time is mostly the outbox: one row per published event. The file is written as rows are read, so its
