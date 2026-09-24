@@ -79,8 +79,8 @@ ledger entry and the document row in the same transaction.
 Why this is enough: the UPDATE takes the row lock. A second grant on the same budget waits for the first to
 commit, then Postgres re-reads the row as the first left it and evaluates the WHERE clause again (READ
 COMMITTED). The check and the write cannot be split by another transaction, so two hundred concurrent
-reservations against room for fifty grant fifty. The domain states the same inequality as
-`Budget.CanAfford`.
+reservations against room for fifty grant fifty (`ConcurrencyTests`, with the numbers under Tests below). The
+domain states the same inequality as `Budget.CanAfford`.
 
 Alternatives considered:
 
@@ -109,11 +109,15 @@ misses an entry that committed late.
 - `requisition_reservations`: `amount >= 0`; a `Held` row has a budget; `status` from the known set.
 - `order_commitments`: `0 <= remaining <= amount`; a `Committed` row has a budget; `last_attempt >= 0`.
 - `cost_centres`: the code pattern; `version >= 1`.
+- `idempotent_requests`: the client's id is the primary key, so two creates racing with one id cannot both
+  commit.
 
 Available itself has no constraint: an invoice larger than its commitment is allowed to take it below zero,
 and the floor grants respect is enforced by their UPDATE.
 
 ## Decisions the design left open
+
+Made in the first phase, with the domain.
 
 - **Refusals are remembered.** Alternative: re-decide a redelivered submission. Rejected, because the answer
   could change and leak a reservation (see above).
@@ -144,31 +148,155 @@ and the floor grants respect is enforced by their UPDATE.
 - **Opening a budget needs an active cost centre.**
 - **Timestamps are stored in UTC**: `OccurredAt` from other services is normalised on the way in.
 
+## HTTP API
+
+Behind the gateway at `/api/cost-centres` and `/api/budgets`; `http/budgets.http` walks through every endpoint.
+Budget admins write. Budgets are read by admins, the auditor and the people who decide on spending against them
+(approvers, finance approvers, the CFO). Cost centres are reference data any signed-in user may read, because a
+requester picks one.
+
+| Method | Path | Who | Answers |
+|---|---|---|---|
+| `POST` | `/cost-centres` | budget-admin | 201 cost centre at version 1; publishes `CostCentreChanged` |
+| `GET` | `/cost-centres?after=&limit=` | signed in | a page in code order |
+| `GET` | `/cost-centres/{code}` | signed in | the cost centre and its version |
+| `PUT` | `/cost-centres/{code}` | budget-admin | 200; made against `version`, publishes the next one |
+| `POST` | `/budgets` | budget-admin | 201 budget; the optional `id` becomes the budget's id |
+| `GET` | `/budgets?fiscalYear=&after=&limit=` | readers | one year's balances in cost centre order |
+| `GET` | `/budgets/{id}` | readers | the four figures, available and overspend |
+| `POST` | `/budgets/{id}/allotment-changes` | budget-admin | 201 with the change and the balance right after it |
+| `GET` | `/budgets/{id}/ledger?after=&limit=` | readers | the ledger in write order; `after` is the last sequence seen |
+| `GET` | `/budgets/overspends?fiscalYear=&after=&limit=` | readers | one year's budgets consumed past their allotment |
+
+Every create takes an optional client `id`. The first request's command and response are stored in
+`idempotent_requests` in the same transaction as the create; a repeat with the same id gets the same status and
+body, and the same id with different content is a 409 `request.id_reused`. Refusals are problem details with a
+code: `cost_centre.already_exists`, `budget.already_exists`, `budget.allotment_below_consumed`,
+`concurrency.conflict` and so on. A malformed body or query is a 400 with the failing fields. The OpenAPI
+document at `/openapi/v1.json` names every response, including 401, 403 and each problem, and a test holds it
+to that.
+
+## Consumers and queues
+
+Six thin consumers in Infrastructure, each calling its handler inside the transaction the outbox opened:
+
+| Queue | Event | Answers with |
+|---|---|---|
+| `budgets-requisition-submitted` | `RequisitionSubmitted` | `FundsReserved` or `FundsReservationRejected` |
+| `budgets-requisition-rejected` | `RequisitionRejected` | nothing |
+| `budgets-requisition-cancelled` | `RequisitionCancelled` | nothing |
+| `budgets-purchase-order-commitment-requested` | `PurchaseOrderCommitmentRequested` | `FundsCommitted` or `FundsCommitmentRejected` |
+| `budgets-invoice-matched` | `InvoiceMatched` | nothing |
+| `budgets-purchase-order-closed` | `PurchaseOrderClosed` | nothing |
+
+`CostCentreChanged` leaves through the bus outbox from the cost centre endpoints. A consumer that loses a race
+(an `xmin` conflict, or a unique index refusing a second row for a document) is retried by the shared policy and
+finds the winner's row on the next attempt; both happen in the test run and show up as `R-RETRY` warnings. A
+`BusinessRuleException` out of a consumer means a malformed message or a broken promise upstream (an invoice for
+an order never committed) and goes straight to the `_error` queue.
+
+## Metrics
+
+Meter `Matchbook.Budgets`, exported with the rest over OTLP:
+
+| Instrument | Tags | What it answers |
+|---|---|---|
+| `matchbook.budgets.reservations` (counter) | `outcome`, `reason` | how many requisitions got money, and why the rest did not |
+| `matchbook.budgets.commitments` (counter) | `outcome`, `reason` | the same for purchase orders |
+| `matchbook.budgets.overspends` (counter) | | invoices that took a budget from within its allotment to past it |
+| `matchbook.budgets.grant.duration` (histogram, s) | `grant`, `outcome` | the conditional UPDATE, including the wait for the budget's row lock |
+
+The histogram is the one to watch. Grants on one budget queue behind each other by design, so when a single
+budget gets hot its p99 rises long before anything fails. A refusal and a budget going into overspend also
+write one log line each, with the numbers.
+
 ## Tests
 
-`tests/Services/Budgets/Matchbook.Budgets.UnitTests` covers the domain directly, and runs FsCheck properties
-over random histories: up to six requisitions against one budget, each withdrawn or ordered with up to three
-commitment attempts, up to three invoices over or under the order, and usually a close, all shuffled into any
-order with random redeliveries. Three thousand histories per property check that the figures equal the
-ledger, that replaying the ledger never finds a reservation or commitment below zero, that a redelivery changes
-nothing, that the figures agree with the documents (reserved with what is held, committed per order with its
-amount less its invoices, zero once closed, actual with the invoices), and, separately, that invoices and
-closes end in the same place in any order. A sampling test checks the histories really reach refusals,
-tombstones, retried attempts and overspends, and mutating the grant rule or the stale-attempt check makes the
-properties fail within a few dozen cases.
+`tests/Services/Budgets/Matchbook.Budgets.UnitTests` (81 tests, under two seconds) covers the domain directly,
+and runs FsCheck properties over random histories: up to six requisitions against one budget, each withdrawn or
+ordered with up to three commitment attempts, up to three invoices over or under the order, and usually a close,
+all shuffled into any order with random redeliveries. Three thousand histories per property check that the
+figures equal the ledger, that replaying the ledger never finds a reservation or commitment below zero, that a
+redelivery changes nothing, that the figures agree with the documents (reserved with what is held, committed per
+order with its amount less its invoices, zero once closed, actual with the invoices), and, separately, that
+invoices and closes end in the same place in any order. A sampling test checks the histories really reach
+refusals, tombstones, retried attempts and overspends, and mutating the grant rule or the stale-attempt check
+makes the properties fail within a few dozen cases. The properties drive the domain through a small in-memory
+copy of each handler's sequence, with the guarded UPDATE replaced by `Budget.CanAfford`, so they say nothing
+about the database.
 
-The properties drive the domain through a small in-memory copy of each handler's sequence, with the guarded
-UPDATE replaced by `Budget.CanAfford`. They say nothing about the database. The concurrency claim, the
-constraints and the outbox are for the integration tests against real Postgres.
+`tests/Services/Budgets/Matchbook.Budgets.IntegrationTests` (32 tests, about a minute including the containers)
+runs the real host against Postgres 18 and RabbitMQ 4.3 in containers, and talks to it only through HTTP and
+real messages:
 
-## For the messaging setup
+- **200 simultaneous reservations** of 1,000 against a budget of 50,000: exactly 50 `FundsReserved`, 150
+  `FundsReservationRejected` with `insufficient_funds`, reserved 50,000, available 0, 50 `Reserve` entries, and
+  the figures equal to the ledger.
+- **50 simultaneous commitments** of 1,500, each taking over its own 500 reservation, against a budget with
+  10,000 already spent and 25,000 left: exactly 25 committed and 25 refused, with the refused orders'
+  reservations still standing and available at 0. The spent 10,000 is there on purpose. With actual at zero,
+  the check constraint `reserved + committed <= allotted` is the same inequality as the grant, so a read-then-
+  write bug would be caught by the constraint and hidden by the retries. With actual in the budget the
+  constraint would allow 35, and only the conditional UPDATE holds it at 25. Replacing the UPDATE with
+  read-then-write makes this test fail with 35 committed; the reservation test still passes under that bug,
+  which is exactly why the second test exists.
+- Redelivery under the same message id (the inbox drops it) and under a new id (the handler's own checks do):
+  nothing changes and nothing new is answered, except a repeated commitment request, which is answered
+  `FundsCommitted` again. A refused reservation sent again after funds were freed is still refused.
+- Tombstones: a cancellation before its submission, and a `PurchaseOrderClosed(Cancelled)` before its
+  commitment request, which releases the requisition's reservation exactly once (also on redelivery) and answers
+  the request `document_closed`. A stale attempt gets no answer and commits nothing; only a newer one is decided.
+- Invoices then close, and close then invoices, on two identical budgets: identical figures.
+- Over HTTP: `CostCentreChanged` at versions 1, 2, 3; a stale version is a 409; allotment rules; idempotent
+  creates for all three create endpoints; 401 and 403 by role; ledger and list paging; the overspend report;
+  the OpenAPI document.
 
-- The grant relies on READ COMMITTED re-checking the WHERE clause after waiting for the lock. MassTransit's EF
-  outbox opens the consumer transaction at REPEATABLE READ unless told otherwise; there a concurrent grant fails
-  with a serialization error (40001) instead, which a retry absorbs but a burst turns into a retry storm.
-  Budgets' consumer endpoints should run at READ COMMITTED.
-- A consumer that loses a race gets `DbUpdateConcurrencyException` or a unique violation. Both should be
-  retried, not faulted.
-- The runtime DbContext registration needs `UseSnakeCaseNamingConvention()` to match the migration.
-- The handlers open their own transaction when none is running (API requests) and join the outbox's otherwise.
-  If the DbContext is registered with a retrying execution strategy, that path needs wrapping in it.
+Measured on a laptop (Intel Core Ultra 7 255H, 32 GB, Docker Desktop on WSL2, both containers local), from the
+first publish to the last answer arriving at the probe, over five runs: the 200 reservations took 1.6 to 4.9
+seconds, the 50 commitments 0.4 to 1.2 seconds. All grants on one budget queue on its row lock, and each holds
+it until its transaction commits (outbox rows and inbox record included), so that is the budget's ceiling:
+a few hundred decisions a second on one budget, and many budgets in parallel. These are test timings, not a
+benchmark, and are not a throughput claim.
+
+## Decisions made while wiring the service
+
+- **Idempotent creates keep the first response, not only the first request.** A repeat has to get the same
+  body, and a cost centre may have been renamed between the first request and its retry; its version 1 cannot
+  be rebuilt from the current row. Rejected: deriving the response from the created resource (wrong after any
+  change) and a hash of the request alone (proves a repeat, cannot answer it). The stored command is compared as
+  a record, so `100` and `100.00` are the same amount.
+- **The client's id becomes the resource's id where there is one**: the budget's id, and the allotment change's
+  document id in the ledger. The ledger's unique key then refuses a double-applied change even if the
+  idempotency row were somehow lost.
+- **A replay publishes nothing.** The first request's event left with its transaction.
+- **Two identical requests racing** both miss the stored response; the second fails on a unique index and gets a
+  409 `request.in_progress` (or the resource's own duplicate code), and its retry gets the stored answer.
+  Rejected: an advisory lock per id, which would make every create pay for a race a client causes by sending
+  twice at once.
+- **Idempotency rows are kept.** Creates are rare admin actions, so the table grows by a few rows a day. A
+  retention job is the upgrade if that changes.
+- **An allotment change is `POST /budgets/{id}/allotment-changes` with a signed amount**, answered 201 with the
+  change and the balance right after it, read inside the transaction under the row lock. No `Location`: a change
+  has no address of its own, and it appears in the ledger under its id. Rejected: `PUT /budgets/{id}/allotment`
+  with a new total, which loses one of two concurrent edits or needs a token every reservation invalidates.
+- **Responses are the application layer's view records** (`BudgetView`, `CostCentreView`, `LedgerEntryView`,
+  `Page<T>`), which are already shaped for the API and are not domain types; requests are separate API records
+  that carry the shape validation. A second set of identical response records would be one more mapping to keep
+  in step for no difference today.
+- **Shape at the edge, rules in the domain.** A missing field, a year outside 2000 to 2100 or a `limit` above 200
+  is a 400 from validation; a code off the pattern, a zero allotment change or an inactive cost centre is a 409
+  or 422 from the domain, with a code.
+- **Read access**: approvers, finance approvers and the CFO read budgets because they approve spending against
+  them; requesters do not. Cost centres are readable by anyone signed in.
+- **The meter is static**, not from `IMeterFactory`: the factory's package is outside what the architecture test
+  allows the application layer, and OpenTelemetry finds a meter by name either way.
+- **The overspend counter counts transitions**, an invoice that takes a budget from within its allotment to past
+  it, not every invoice on a budget already over. That is the event someone has to act on.
+
+## What the shared plumbing provides
+
+The consumer outbox runs at READ COMMITTED, which is what the grant needs (the UPDATE waits for the row lock and
+then re-evaluates its WHERE clause on the new row; under REPEATABLE READ, MassTransit's own default, it would
+fail with a serialization error instead). `AddMatchbookDatabase` applies the snake_case names the migrations
+use and runs no retrying execution strategy, so the handlers' own transaction on the API path is safe. Retries
+cover everything but a `BusinessRuleException`.
