@@ -1,6 +1,6 @@
 using Matchbook.Contracts.Payables;
-using Matchbook.Payables.Application.Invoices;
-using Matchbook.Payables.Application.PaymentRuns;
+using Matchbook.Payables.Application.Features.Invoices;
+using Matchbook.Payables.Application.Features.PaymentRuns;
 using Matchbook.Payables.Domain.Invoices;
 using Matchbook.Payables.Domain.PaymentRuns;
 using Matchbook.Testing;

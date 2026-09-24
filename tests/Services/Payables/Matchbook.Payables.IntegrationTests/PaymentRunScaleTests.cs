@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Xml;
 using Matchbook.Payables.Application;
-using Matchbook.Payables.Application.PaymentRuns;
+using Matchbook.Payables.Application.Features.PaymentRuns;
 using Matchbook.Payables.Domain;
 using Matchbook.Payables.Domain.Invoices;
 using Matchbook.Payables.Domain.Orders;
