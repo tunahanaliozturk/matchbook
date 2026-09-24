@@ -26,7 +26,7 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
             table.HasCheckConstraint("ck_suppliers_block_reason", "(status = 'Blocked') = (block_reason IS NOT NULL)");
         });
 
-        builder.HasKey(static supplier => supplier.Id);
+        builder.HasKey(static supplier => supplier.Id).HasName(SupplierIndexes.SupplierKey);
         builder.Property(static supplier => supplier.Id).ValueGeneratedNever();
 
         builder.Property(static supplier => supplier.LegalName).HasMaxLength(SupplierDetails.LegalNameMaxLength);
@@ -51,7 +51,7 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
             .HasForeignKey(static account => account.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(static supplier => supplier.TaxId).IsUnique().HasDatabaseName("ux_suppliers_tax_id");
+        builder.HasIndex(static supplier => supplier.TaxId).IsUnique().HasDatabaseName(SupplierIndexes.TaxId);
 
         // The approver's queue: suppliers pending activation, in keyset order.
         builder.HasIndex(static supplier => new { supplier.Status, supplier.Id });

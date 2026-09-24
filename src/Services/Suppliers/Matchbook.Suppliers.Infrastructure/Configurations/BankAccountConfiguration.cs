@@ -1,14 +1,15 @@
+using Matchbook.BuildingBlocks.Security;
 using Matchbook.Suppliers.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Matchbook.Suppliers.Infrastructure.Configurations;
 
-internal sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAccount>
+internal sealed class BankAccountConfiguration(ColumnProtector protector) : IEntityTypeConfiguration<BankAccount>
 {
     public void Configure(EntityTypeBuilder<BankAccount> builder)
     {
-        // No check on the IBAN column: it will hold ciphertext once it is encrypted at rest.
+        // No check on the IBAN column: it holds ciphertext.
         builder.ToTable("bank_accounts", static table =>
         {
             table.HasCheckConstraint("ck_bank_accounts_status", "status IN ('Pending', 'Approved', 'Rejected')");
@@ -25,13 +26,13 @@ internal sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAc
                 "ck_bank_accounts_reason_when_rejected", "(status = 'Rejected') = (rejection_reason IS NOT NULL)");
         });
 
-        builder.HasKey(static account => account.Id);
+        builder.HasKey(static account => account.Id).HasName(SupplierIndexes.BankAccountKey);
 
         // Client-generated. Without this EF treats a new account added to a loaded supplier as an existing row
         // and issues an UPDATE that matches nothing.
         builder.Property(static account => account.Id).ValueGeneratedNever();
 
-        builder.Property(static account => account.Iban).HasConversion(new IbanConverter());
+        builder.Property(static account => account.Iban).HasConversion(IbanConverter.EncryptedWith(protector));
         builder.Property(static account => account.Bic)
             .HasConversion(static bic => bic.Value, static value => Bic.Parse(value))
             .HasMaxLength(11);
@@ -47,7 +48,7 @@ internal sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAc
         builder.HasIndex(static account => account.SupplierId, "one_pending_per_supplier")
             .IsUnique()
             .HasFilter("status = 'Pending'")
-            .HasDatabaseName("ux_bank_accounts_one_pending_per_supplier");
+            .HasDatabaseName(SupplierIndexes.OnePendingBankAccount);
 
         // Also the index for loading a supplier's history, so the foreign key needs no index of its own.
         builder.HasIndex(static account => new { account.SupplierId, account.AccountVersion })

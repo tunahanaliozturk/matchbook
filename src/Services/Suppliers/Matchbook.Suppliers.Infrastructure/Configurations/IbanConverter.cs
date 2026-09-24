@@ -1,12 +1,19 @@
+using Matchbook.BuildingBlocks.Security;
 using Matchbook.Suppliers.Domain;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Matchbook.Suppliers.Infrastructure.Configurations;
 
 /// <summary>
-/// The IBAN column's one mapping, and the seam for encryption at rest: compose it with the column protector's
-/// string converter (<c>new IbanConverter().ComposeWith(...)</c>) and neither the domain nor any query changes.
+/// The IBAN column's one mapping: the value object to its electronic form, then encrypted under the payment-data
+/// key. Reading parses the decrypted value again, so a row can never hand the domain an IBAN it would refuse.
 /// </summary>
-internal sealed class IbanConverter() : ValueConverter<Iban, string>(
-    static iban => iban.Value,
-    static value => Iban.Parse(value));
+internal static class IbanConverter
+{
+    private static readonly ValueConverter<Iban, string> Plain = new(
+        static iban => iban.Value,
+        static value => Iban.Parse(value));
+
+    public static ValueConverter EncryptedWith(ColumnProtector protector) =>
+        Plain.ComposeWith(new ProtectedStringConverter(protector));
+}
