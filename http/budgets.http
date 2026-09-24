@@ -1,0 +1,137 @@
+# Budgets through the gateway. Start the stack with `docker compose up -d`, then send the requests from the top.
+# The ids are fixed on purpose: send a create twice and the second answer is the first one, not a duplicate.
+
+@gateway = http://localhost:5300/api
+@year = 2026
+
+# Sign in as bob, the budget admin; every request below carries his token.
+# @name login
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=bob&password=matchbook
+
+###
+
+# Create a cost centre managed by mark; this publishes CostCentreChanged at version 1.
+# @name costCentre
+POST {{gateway}}/cost-centres
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "0199a1b2-0000-7000-8000-00000000c001",
+  "code": "OPS-DEMO",
+  "name": "Operations demo",
+  "managerId": "a0000000-0000-4000-8000-000000000002"
+}
+
+###
+
+# Send the same create again: 201 with the same body, and nothing new is created or published.
+POST {{gateway}}/cost-centres
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "0199a1b2-0000-7000-8000-00000000c001",
+  "code": "OPS-DEMO",
+  "name": "Operations demo",
+  "managerId": "a0000000-0000-4000-8000-000000000002"
+}
+
+###
+
+# List cost centres in code order; pass the returned "next" as ?after= for the following page.
+GET {{gateway}}/cost-centres?limit=20
+Authorization: Bearer {{login.response.body.access_token}}
+
+###
+
+# Read one cost centre, including the version a change has to name.
+# @name current
+GET {{gateway}}/cost-centres/OPS-DEMO
+Authorization: Bearer {{login.response.body.access_token}}
+
+###
+
+# Rename it against the version just read; the next CostCentreChanged carries version + 1.
+PUT {{gateway}}/cost-centres/OPS-DEMO
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "version": {{current.response.body.version}},
+  "name": "Operations",
+  "managerId": "a0000000-0000-4000-8000-000000000002",
+  "isActive": true
+}
+
+###
+
+# Open its budget for the year with 50,000 allotted; the id becomes the budget's id.
+# @name budget
+POST {{gateway}}/budgets
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "0199a1b2-0000-7000-8000-00000000b001",
+  "costCentreCode": "OPS-DEMO",
+  "fiscalYear": {{year}},
+  "allotted": 50000.00
+}
+
+###
+
+# The balance: allotted, reserved, committed, actual, and what is available and overspent.
+GET {{gateway}}/budgets/{{budget.response.body.id}}
+Authorization: Bearer {{login.response.body.access_token}}
+
+###
+
+# Raise the allotment by 5,000; the answer is the change and the balance right after it.
+POST {{gateway}}/budgets/{{budget.response.body.id}}/allotment-changes
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "0199a1b2-0000-7000-8000-00000000a001",
+  "change": 5000.00
+}
+
+###
+
+# Try to lower it below what is consumed: 409 budget.allotment_below_consumed.
+POST {{gateway}}/budgets/{{budget.response.body.id}}/allotment-changes
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "change": -1000000.00
+}
+
+###
+
+# Every budget of the year, in cost centre order.
+GET {{gateway}}/budgets?fiscalYear={{year}}&limit=50
+Authorization: Bearer {{login.response.body.access_token}}
+
+###
+
+# The budget's ledger, two entries at a time: the opening and the raise.
+# @name ledger
+GET {{gateway}}/budgets/{{budget.response.body.id}}/ledger?limit=2
+Authorization: Bearer {{login.response.body.access_token}}
+
+###
+
+# The next page of the ledger, from the cursor the previous page returned (empty once it is null).
+GET {{gateway}}/budgets/{{budget.response.body.id}}/ledger?limit=2&after={{ledger.response.body.next}}
+Authorization: Bearer {{login.response.body.access_token}}
+
+###
+
+# Budgets whose invoices have run past their allotment this year.
+GET {{gateway}}/budgets/overspends?fiscalYear={{year}}
+Authorization: Bearer {{login.response.body.access_token}}
