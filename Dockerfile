@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # One image definition for every host. PROJECT is the Api (or gateway) project to publish and ASSEMBLY its
-# entry assembly, both passed by compose.
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# entry assembly, both passed by compose. Base images are pinned by digest as well as tag: a tag moves, so two
+# builds of one commit could otherwise ship different runtimes, and the tag stays only so a reader can see which.
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:35d40304542c8689331f8cab17c65926cdf48fe711e289321d71924b230a7d29 AS build
 ARG PROJECT
 WORKDIR /source
 
@@ -16,7 +17,7 @@ COPY src/ src/
 RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
     dotnet publish "${PROJECT}" --configuration Release --output /app
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:2d584d8147faddb0d678c5748d47953e5b8e18621ed4fb7049a91381d9d7746f AS runtime
 ARG ASSEMBLY
 ENV ASSEMBLY=${ASSEMBLY}
 WORKDIR /app

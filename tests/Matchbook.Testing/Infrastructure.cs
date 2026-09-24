@@ -16,8 +16,10 @@ namespace Matchbook.Testing;
 /// </remarks>
 public sealed class Infrastructure : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18.6-alpine").Build();
-    private readonly RabbitMqContainer _rabbit = new RabbitMqBuilder("rabbitmq:4.3-alpine").Build();
+    // Pinned by digest, like the compose stack, so a passing run today and a failing one next month cannot differ
+    // only in which build of Postgres or RabbitMQ a moving tag happened to name.
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873").Build();
+    private readonly RabbitMqContainer _rabbit = new RabbitMqBuilder("rabbitmq:4.3-alpine@sha256:2531fe16e1cb4ec4086d3eaa63118c8f074dd98620d55f022f453a397b18f037").Build();
 
     public async ValueTask InitializeAsync() =>
         await Task.WhenAll(_postgres.StartAsync(), _rabbit.StartAsync());
