@@ -7,11 +7,13 @@ namespace Matchbook.Purchasing.Application.Features.PurchaseOrders.Queries.ListP
 /// <param name="After">The <see cref="PurchaseOrderPage.Next"/> of the previous page; null for the first.</param>
 public sealed record ListPurchaseOrdersQuery(PurchaseOrderStatus? Status, Guid? After, int Limit) : IQuery<PurchaseOrderPage>;
 
+/// <param name="SupplierName">From the local copy of the supplier; null until its first snapshot arrives.</param>
 public sealed record PurchaseOrderSummary(
     Guid Id,
     string Number,
     PurchaseOrderStatus Status,
     Guid SupplierId,
+    string? SupplierName,
     string CostCentreCode,
     decimal Amount,
     DateTimeOffset DraftedAt);

@@ -12,6 +12,6 @@ public sealed class AmendDraftLineHandler(IPurchasingDb db) : ICommandHandler<Am
         order.AmendLine(command.Buyer, command.LineNumber, command.Quantity, command.UnitPrice);
 
         await db.SaveChangesAsync(cancellationToken);
-        return PurchaseOrderView.From(order);
+        return PurchaseOrderView.From(order, await db.Suppliers.NameOfAsync(order.SupplierId, cancellationToken));
     }
 }

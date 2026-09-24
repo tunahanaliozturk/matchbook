@@ -49,6 +49,7 @@ export const zPurchaseOrderSummary = z.object({
     number: z.string(),
     status: zPurchaseOrderStatus,
     supplierId: z.uuid(),
+    supplierName: z.string().nullable(),
     costCentreCode: z.string(),
     amount: z.number(),
     draftedAt: z.iso.datetime({ offset: true })
@@ -65,6 +66,7 @@ export const zPurchaseOrderView = z.object({
     status: zPurchaseOrderStatus,
     requisitionId: z.uuid(),
     supplierId: z.uuid(),
+    supplierName: z.string().nullable(),
     costCentreCode: z.string(),
     fiscalYear: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     amount: z.number(),

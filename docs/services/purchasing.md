@@ -6,7 +6,8 @@ the order, records what arrives, and closes the order once the invoices for it a
 - **purchase orders** and their lines, each line carrying running totals of what was received and invoiced;
 - **goods receipts**, one row per delivery, the record of how those totals got where they are;
 - **matched invoices**, one row per invoice already counted, which is what makes `InvoiceMatched` idempotent;
-- a **local copy of each supplier's standing** (active or not, and the snapshot version), from `SupplierChanged`.
+- a **local copy of each supplier's standing and name** (active or not, the legal name, and the snapshot version),
+  from `SupplierChanged`.
 
 Every rule is decided in `PurchaseOrder` against the running totals. Receipts and matched invoices are separate
 tables rather than collections loaded with the order, so loading an order for a change costs the same on its
@@ -170,8 +171,11 @@ refusing one because it named a line twice would park it for nothing.
 **Rejection clears the issuing buyer.** The next buyer to issue the order is the one the receipt rule compares
 against. Cancelling a pending order keeps it, as a record of who sent it for commitment.
 
-**The supplier copy holds only the standing and the version.** Name, country and bank details belong to the
-Suppliers service and nothing here reads them.
+**The supplier copy holds the standing, the version and the name.** The name is there because a buyer cannot read
+the Suppliers service and still has to see who an order is to (ADR 0009: reference data a role cannot read from
+its owner is served by the service holding a copy). It is read from the copy whenever an order is read, not written
+onto the order, so a rename reaches every order already drafted. Country and bank details belong to Suppliers and
+nothing here reads them.
 
 **Lists are newest first, keyed on the id.** Version 7 ids sort by creation time, so the cursor is the last id
 seen and the next page is one index range scan however deep the reader goes. The limit is clamped to 1 to 200.
@@ -196,6 +200,11 @@ through it in order.
 | `GET /purchase-orders/{id}/receipts/{receiptId}` | buyer, receiver, auditor | 200 receipt | 404 `goods_receipt.not_found` |
 
 A lost race on the order row is 409 `concurrency.conflict` wherever it happens; read the order and try again.
+
+Every order and list item carries `supplierName` from the local copy, the answers to commands included. It is null
+for a supplier no snapshot has arrived for yet, and such an order still lists. `ReadingTests` holds both: the name
+from `SupplierChanged` in a read, a list and a command's answer, a rename reaching an order already drafted, and
+null for an unknown supplier.
 
 ## Messaging
 
@@ -277,3 +286,8 @@ measured from the draft, which is made when the approval is consumed. Storing th
 rejected: a column and a migration to remove what is normally milliseconds of consumer lag.
 
 **No new migration.** Nothing in phase 2 changed the model; the client-chosen receipt id uses the existing key.
+
+**Supplier names needed one.** The console shows a buyer the supplier's name, and the copy had no column for it.
+`SupplierNames` adds a nullable `legal_name` and touches no existing row. A copy stored before it has no name until
+that supplier's next snapshot, and answers `supplierName: null` meanwhile, as an unknown supplier does. Filling
+it at start-up was rejected: Purchasing has no source for the name but the event.

@@ -37,7 +37,7 @@ public sealed class IssuingTests
         PurchaseOrder order = Orders.Draft();
 
         ShouldBeRefused(
-            () => order.RequestIssue(People.Bruno, new Supplier(order.SupplierId, 3, isActive: false)),
+            () => order.RequestIssue(People.Bruno, new Supplier(order.SupplierId, 3, "Acme", isActive: false)),
             "purchase_order.supplier_not_active",
             ViolationKind.Conflict);
     }
@@ -47,7 +47,7 @@ public sealed class IssuingTests
     {
         PurchaseOrder order = Orders.Draft();
 
-        Should.Throw<ArgumentException>(() => order.RequestIssue(People.Bruno, new Supplier(Guid.CreateVersion7(), 1, true)));
+        Should.Throw<ArgumentException>(() => order.RequestIssue(People.Bruno, new Supplier(Guid.CreateVersion7(), 1, "Acme", true)));
     }
 
     [Fact]

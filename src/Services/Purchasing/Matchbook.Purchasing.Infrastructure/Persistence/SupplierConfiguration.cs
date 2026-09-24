@@ -11,5 +11,6 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.ToTable("suppliers");
         builder.HasKey(supplier => supplier.Id);
         builder.Property(supplier => supplier.Id).ValueGeneratedNever();
+        builder.Property(supplier => supplier.LegalName).HasMaxLength(200);
     }
 }

@@ -17,6 +17,6 @@ public sealed class ShortClosePurchaseOrderHandler(
         await publisher.PublishAsync(OutgoingEvents.Closed(order), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         metrics.OrderClosed(order.Status);
-        return PurchaseOrderView.From(order);
+        return PurchaseOrderView.From(order, await db.Suppliers.NameOfAsync(order.SupplierId, cancellationToken));
     }
 }

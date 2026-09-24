@@ -3,12 +3,14 @@ using Matchbook.Purchasing.Domain;
 namespace Matchbook.Purchasing.Application.Features.PurchaseOrders;
 
 /// <summary>A purchase order as the API returns it, from a read or after any change.</summary>
+/// <param name="SupplierName">From the local copy of the supplier; null until its first snapshot arrives.</param>
 public sealed record PurchaseOrderView(
     Guid Id,
     string Number,
     PurchaseOrderStatus Status,
     Guid RequisitionId,
     Guid SupplierId,
+    string? SupplierName,
     string CostCentreCode,
     int FiscalYear,
     decimal Amount,
@@ -21,7 +23,7 @@ public sealed record PurchaseOrderView(
     DateTimeOffset? ClosedAt,
     IReadOnlyList<OrderLineView> Lines)
 {
-    public static PurchaseOrderView From(PurchaseOrder order)
+    public static PurchaseOrderView From(PurchaseOrder order, string? supplierName)
     {
         ArgumentNullException.ThrowIfNull(order);
 
@@ -31,6 +33,7 @@ public sealed record PurchaseOrderView(
             order.Status,
             order.RequisitionId,
             order.SupplierId,
+            supplierName,
             order.CostCentreCode,
             order.FiscalYear,
             order.Amount,

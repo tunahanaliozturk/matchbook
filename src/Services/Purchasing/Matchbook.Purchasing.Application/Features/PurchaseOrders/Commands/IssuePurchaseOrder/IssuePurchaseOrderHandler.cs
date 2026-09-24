@@ -23,6 +23,6 @@ public sealed class IssuePurchaseOrderHandler(IPurchasingDb db, IEventPublisher 
 
         await publisher.PublishAsync(OutgoingEvents.CommitmentRequested(order, clock.GetUtcNow()), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-        return PurchaseOrderView.From(order);
+        return PurchaseOrderView.From(order, supplier?.LegalName);
     }
 }

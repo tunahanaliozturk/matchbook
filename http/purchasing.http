@@ -24,7 +24,8 @@ Authorization: Bearer {{bruno.response.body.access_token}}
 
 @orderId = {{drafts.response.body.$.items[0].id}}
 
-### One order, with ordered, received and invoiced quantities on every line.
+### One order, with ordered, received and invoiced quantities on every line, and the supplier's name from
+# Purchasing's own copy (null until the supplier's first SupplierChanged arrives).
 # @name order
 GET {{gateway}}/purchase-orders/{{orderId}}
 Authorization: Bearer {{bruno.response.body.access_token}}

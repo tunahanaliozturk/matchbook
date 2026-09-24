@@ -22,6 +22,6 @@ public sealed class GetPurchaseOrderForRequisitionHandler(IPurchasingDb db)
                 $"No purchase order has been drafted for requisition {query.RequisitionId}.",
                 ViolationKind.NotFound);
 
-        return PurchaseOrderView.From(order);
+        return PurchaseOrderView.From(order, await db.Suppliers.NameOfAsync(order.SupplierId, cancellationToken));
     }
 }
