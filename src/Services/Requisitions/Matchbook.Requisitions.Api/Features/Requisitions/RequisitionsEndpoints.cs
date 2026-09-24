@@ -47,6 +47,7 @@ internal static class RequisitionsEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         // A requester may read neither Budgets nor Suppliers, so the form's choices come from this service's copies.
+        // Suppliers are open to every reader: an approver cannot read Suppliers either, and has to see who is paid.
         requisitions.MapGet("/cost-centres", ListCostCentreOptionsAsync)
             .RequireAuthorization(Policies.Request)
             .WithName("ListCostCentreOptions")
@@ -54,10 +55,10 @@ internal static class RequisitionsEndpoints
             .WithDescription("Role: requester. The active ones the caller does not manage, as this service last heard of them, in code order; at most 200.");
 
         requisitions.MapGet("/suppliers", ListSupplierOptionsAsync)
-            .RequireAuthorization(Policies.Request)
+            .RequireAuthorization(Policies.Read)
             .WithName("ListSupplierOptions")
             .WithSummary("The suppliers a requisition may be raised against.")
-            .WithDescription("Role: requester. The active ones, as this service last heard of them, in name order; at most 200.");
+            .WithDescription("Roles: requester, approver, finance-approver, cfo, auditor. The active ones, as this service last heard of them, in name order; at most 200.");
 
         requisitions.MapGet("/{id:guid}", GetAsync)
             .RequireAuthorization(Policies.Read)

@@ -219,17 +219,20 @@ public sealed class RequisitionApiTests(RequisitionsFixture fixture) : IClassFix
     }
 
     [Fact]
-    public async Task The_form_offers_the_active_suppliers()
+    public async Task The_active_suppliers_are_offered_to_everyone_who_reads_requisitions()
     {
         Guid blocked = Guid.CreateVersion7();
         await fixture.DeliverAsync(new SupplierChanged(blocked, 1, "Blocked Trading Ltd", "GB", SupplierStatus.Blocked, 30, null, DateTimeOffset.UtcNow));
 
         List<SupplierOption> offered = await (await fixture.Client(TestUsers.Rita).GetAsync(Scenario.Url("/requisitions/suppliers")))
             .ReadAsync<List<SupplierOption>>();
+        List<SupplierOption> toApprover = await (await fixture.Client(TestUsers.Mark).GetAsync(Scenario.Url("/requisitions/suppliers")))
+            .ReadAsync<List<SupplierOption>>();
 
         offered.ShouldContain(new SupplierOption(RequisitionsFixture.SupplierId, "Acme Office Supplies BV"));
         offered.ShouldNotContain(option => option.Id == blocked);
-        (await fixture.Client(TestUsers.Audrey).GetAsync(Scenario.Url("/requisitions/suppliers"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        toApprover.ShouldBe(offered);
+        (await fixture.Client(TestUsers.Bruno).GetAsync(Scenario.Url("/requisitions/suppliers"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]

@@ -6,8 +6,9 @@ namespace Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListS
 
 /// <summary>
 /// The suppliers a requisition may be raised against, from this service's copy: the active ones, which is what
-/// submitting checks. A requester cannot read Suppliers, so the form asks here (ADR 0009). Name order, as many as a
-/// list returns at most.
+/// submitting checks. Neither a requester nor an approver may read Suppliers, so the form asks here for its
+/// choices and a requisition's page for its supplier's name (ADR 0009). Name order, as many as a list returns at
+/// most.
 /// </summary>
 public sealed class ListSupplierOptionsHandler(IRequisitionsDb db)
     : IQueryHandler<ListSupplierOptionsQuery, IReadOnlyList<SupplierOption>>
