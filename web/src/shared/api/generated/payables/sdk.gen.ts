@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptPriceVarianceData, AcceptPriceVarianceErrors, AcceptPriceVarianceResponses, CancelPaymentRunData, CancelPaymentRunErrors, CancelPaymentRunResponses, CaptureInvoiceData, CaptureInvoiceErrors, CaptureInvoiceResponses, ClearSuspectedDuplicateData, ClearSuspectedDuplicateErrors, ClearSuspectedDuplicateResponses, DownloadPaymentFileData, DownloadPaymentFileErrors, DownloadPaymentFileResponses, DraftPaymentRunData, DraftPaymentRunErrors, DraftPaymentRunResponses, GetInvoiceData, GetInvoiceErrors, GetInvoiceResponses, GetPaymentRunData, GetPaymentRunErrors, GetPaymentRunResponses, ListInvoiceExceptionsData, ListInvoiceExceptionsErrors, ListInvoiceExceptionsResponses, ListInvoicesData, ListInvoicesErrors, ListInvoicesResponses, ReleasePaymentRunData, ReleasePaymentRunErrors, ReleasePaymentRunResponses } from './types.gen';
-import { zAcceptPriceVarianceBody, zAcceptPriceVariancePath, zAcceptPriceVarianceResponse, zCancelPaymentRunPath, zCancelPaymentRunResponse, zCaptureInvoiceBody, zCaptureInvoiceResponse, zClearSuspectedDuplicatePath, zClearSuspectedDuplicateResponse, zDownloadPaymentFilePath, zDownloadPaymentFileResponse, zDraftPaymentRunBody, zDraftPaymentRunResponse, zGetInvoicePath, zGetInvoiceResponse, zGetPaymentRunPath, zGetPaymentRunResponse, zListInvoiceExceptionsQuery, zListInvoiceExceptionsResponse, zListInvoicesQuery, zListInvoicesResponse, zReleasePaymentRunPath, zReleasePaymentRunResponse } from './zod.gen';
+import type { AcceptPriceVarianceData, AcceptPriceVarianceErrors, AcceptPriceVarianceResponses, CancelPaymentRunData, CancelPaymentRunErrors, CancelPaymentRunResponses, CaptureInvoiceData, CaptureInvoiceErrors, CaptureInvoiceResponses, ClearSuspectedDuplicateData, ClearSuspectedDuplicateErrors, ClearSuspectedDuplicateResponses, DownloadPaymentFileData, DownloadPaymentFileErrors, DownloadPaymentFileResponses, DraftPaymentRunData, DraftPaymentRunErrors, DraftPaymentRunResponses, GetInvoiceData, GetInvoiceErrors, GetInvoiceResponses, GetPaymentRunData, GetPaymentRunErrors, GetPaymentRunResponses, ListBillablePurchaseOrdersData, ListBillablePurchaseOrdersErrors, ListBillablePurchaseOrdersResponses, ListBillableSuppliersData, ListBillableSuppliersErrors, ListBillableSuppliersResponses, ListInvoiceExceptionsData, ListInvoiceExceptionsErrors, ListInvoiceExceptionsResponses, ListInvoicesData, ListInvoicesErrors, ListInvoicesResponses, ListPaymentRunsData, ListPaymentRunsErrors, ListPaymentRunsResponses, ReleasePaymentRunData, ReleasePaymentRunErrors, ReleasePaymentRunResponses } from './types.gen';
+import { zAcceptPriceVarianceBody, zAcceptPriceVariancePath, zAcceptPriceVarianceResponse, zCancelPaymentRunPath, zCancelPaymentRunResponse, zCaptureInvoiceBody, zCaptureInvoiceResponse, zClearSuspectedDuplicatePath, zClearSuspectedDuplicateResponse, zDownloadPaymentFilePath, zDownloadPaymentFileResponse, zDraftPaymentRunBody, zDraftPaymentRunResponse, zGetInvoicePath, zGetInvoiceResponse, zGetPaymentRunPath, zGetPaymentRunResponse, zListBillablePurchaseOrdersQuery, zListBillablePurchaseOrdersResponse, zListBillableSuppliersQuery, zListBillableSuppliersResponse, zListInvoiceExceptionsQuery, zListInvoiceExceptionsResponse, zListInvoicesQuery, zListInvoicesResponse, zListPaymentRunsQuery, zListPaymentRunsResponse, zReleasePaymentRunPath, zReleasePaymentRunResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -71,6 +71,36 @@ export const listInvoiceExceptions = <ThrowOnError extends boolean = true>(optio
 });
 
 /**
+ * Suppliers with an order an invoice can still bill, newest first, for capturing an invoice
+ */
+export const listBillableSuppliers = <ThrowOnError extends boolean = true>(options?: Options<ListBillableSuppliersData, ThrowOnError>): RequestResult<ListBillableSuppliersResponses, ListBillableSuppliersErrors, ThrowOnError> => (options?.client ?? client).get<ListBillableSuppliersResponses, ListBillableSuppliersErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zListBillableSuppliersQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListBillableSuppliersResponse.parseAsync(data),
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/invoices/suppliers',
+    ...options
+});
+
+/**
+ * Issued orders an invoice can still bill, with their lines, newest first, optionally for one supplier
+ */
+export const listBillablePurchaseOrders = <ThrowOnError extends boolean = true>(options?: Options<ListBillablePurchaseOrdersData, ThrowOnError>): RequestResult<ListBillablePurchaseOrdersResponses, ListBillablePurchaseOrdersErrors, ThrowOnError> => (options?.client ?? client).get<ListBillablePurchaseOrdersResponses, ListBillablePurchaseOrdersErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zListBillablePurchaseOrdersQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListBillablePurchaseOrdersResponse.parseAsync(data),
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/invoices/purchase-orders',
+    ...options
+});
+
+/**
  * An invoice, with why it is in its current state
  */
 export const getInvoice = <ThrowOnError extends boolean = true>(options: Options<GetInvoiceData, ThrowOnError>): RequestResult<GetInvoiceResponses, GetInvoiceErrors, ThrowOnError> => (options.client ?? client).get<GetInvoiceResponses, GetInvoiceErrors, ThrowOnError>({
@@ -116,6 +146,21 @@ export const clearSuspectedDuplicate = <ThrowOnError extends boolean = true>(opt
     responseValidator: async (data) => await zClearSuspectedDuplicateResponse.parseAsync(data),
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/invoices/{id}/clear-suspected-duplicate',
+    ...options
+});
+
+/**
+ * List payment runs, newest first, optionally in one status
+ */
+export const listPaymentRuns = <ThrowOnError extends boolean = true>(options?: Options<ListPaymentRunsData, ThrowOnError>): RequestResult<ListPaymentRunsResponses, ListPaymentRunsErrors, ThrowOnError> => (options?.client ?? client).get<ListPaymentRunsResponses, ListPaymentRunsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: zListPaymentRunsQuery.optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListPaymentRunsResponse.parseAsync(data),
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/payment-runs',
     ...options
 });
 

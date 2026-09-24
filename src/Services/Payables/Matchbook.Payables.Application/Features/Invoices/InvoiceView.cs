@@ -4,6 +4,8 @@ using Matchbook.Payables.Domain.Invoices;
 namespace Matchbook.Payables.Application.Features.Invoices;
 
 /// <summary>An invoice with everything a person needs to act on it, including why it is where it is.</summary>
+/// <param name="SupplierName">The supplier's legal name from the local copy; null until Suppliers' event has arrived.</param>
+/// <param name="PurchaseOrderNumber">The order's number from the local copy; null until Purchasing's event has arrived.</param>
 public sealed record InvoiceView(
     Guid Id,
     Guid SupplierId,
@@ -23,9 +25,11 @@ public sealed record InvoiceView(
     string? VarianceAcceptanceReason,
     DateTimeOffset? MatchedAt,
     DateOnly? DueDate,
-    DateTimeOffset? PaidAt)
+    DateTimeOffset? PaidAt,
+    string? SupplierName,
+    string? PurchaseOrderNumber)
 {
-    public static InvoiceView From(Invoice invoice)
+    public static InvoiceView From(Invoice invoice, string? supplierName, string? purchaseOrderNumber)
     {
         ArgumentNullException.ThrowIfNull(invoice);
 
@@ -48,13 +52,16 @@ public sealed record InvoiceView(
             invoice.VarianceAcceptanceReason,
             invoice.MatchedAt,
             invoice.DueDate,
-            invoice.PaidAt);
+            invoice.PaidAt,
+            supplierName,
+            purchaseOrderNumber);
     }
 }
 
 public sealed record InvoiceLineView(int LineNumber, decimal Quantity, decimal UnitPrice, decimal Amount);
 
 /// <summary>An invoice as a list shows it.</summary>
+/// <param name="SupplierName">The supplier's legal name from the local copy; null until Suppliers' event has arrived.</param>
 public sealed record InvoiceSummary(
     Guid Id,
     Guid SupplierId,
@@ -65,8 +72,10 @@ public sealed record InvoiceSummary(
     InvoiceStatus Status,
     MatchReason? Reason,
     DateTimeOffset CapturedAt,
-    DateOnly? DueDate)
+    DateOnly? DueDate,
+    string? SupplierName)
 {
+    // The name is filled in afterwards by NamedAsync, from one query for the page rather than a join per row.
     internal static readonly Expression<Func<Invoice, InvoiceSummary>> Projection = invoice => new InvoiceSummary(
         invoice.Id,
         invoice.SupplierId,
@@ -77,5 +86,6 @@ public sealed record InvoiceSummary(
         invoice.Status,
         invoice.Reason,
         invoice.CapturedAt,
-        invoice.DueDate);
+        invoice.DueDate,
+        null);
 }

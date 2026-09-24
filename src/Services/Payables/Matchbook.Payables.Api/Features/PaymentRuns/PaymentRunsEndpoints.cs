@@ -1,11 +1,14 @@
 using System.Security.Claims;
 using Matchbook.BuildingBlocks.Security;
+using Matchbook.Payables.Application.Common;
 using Matchbook.Payables.Application.Features.PaymentRuns;
 using Matchbook.Payables.Application.Features.PaymentRuns.Commands.CancelPaymentRun;
 using Matchbook.Payables.Application.Features.PaymentRuns.Commands.DraftPaymentRun;
 using Matchbook.Payables.Application.Features.PaymentRuns.Commands.ReleasePaymentRun;
 using Matchbook.Payables.Application.Features.PaymentRuns.Queries.DownloadPaymentFile;
 using Matchbook.Payables.Application.Features.PaymentRuns.Queries.GetPaymentRun;
+using Matchbook.Payables.Application.Features.PaymentRuns.Queries.ListPaymentRuns;
+using Matchbook.Payables.Domain.PaymentRuns;
 using Matchbook.SharedKernel;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -23,6 +26,13 @@ internal static class PaymentRunsEndpoints
             .WithSummary("Draft a run of every payable invoice due by the execution date, for suppliers that can be paid")
             .ProducesValidationProblem()
             .ProducesRefusals(StatusCodes.Status409Conflict, StatusCodes.Status422UnprocessableEntity);
+
+        runs.MapGet("/", List)
+            .RequireAuthorization(Policies.ReadPaymentRuns)
+            .WithName("ListPaymentRuns")
+            .WithSummary("List payment runs, newest first, optionally in one status")
+            .ProducesValidationProblem()
+            .ProducesRefusals();
 
         runs.MapGet("/{id:guid}", Get)
             .RequireAuthorization(Policies.ReadPaymentRuns)
@@ -63,6 +73,14 @@ internal static class PaymentRunsEndpoints
             cancellationToken);
         return TypedResults.Created($"/payment-runs/{run.Id}", run);
     }
+
+    private static async Task<Ok<Page<PaymentRunSummary>>> List(
+        PaymentRunStatus? status,
+        Guid? after,
+        int? limit,
+        IQueryHandler<ListPaymentRunsQuery, Page<PaymentRunSummary>> handler,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await handler.HandleAsync(new ListPaymentRunsQuery(status, after, limit ?? 0), cancellationToken));
 
     private static async Task<Ok<PaymentRunView>> Get(
         Guid id,

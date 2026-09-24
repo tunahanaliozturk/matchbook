@@ -1,6 +1,6 @@
 # Payables through the gateway, in the order a reader would try it. Start the stack with `docker compose up`.
 # Invoices bill orders that Purchasing issued to suppliers that Suppliers activated; set the two ids below to an
-# active supplier and an order issued to it, from those services.
+# active supplier and an order issued to it, from those services or from the two lookups below.
 
 @gateway = http://localhost:5300/api
 @supplierId = 00000000-0000-0000-0000-000000000000
@@ -33,6 +33,14 @@ POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=password&client_id=matchbook-cli&username=trevor&password=matchbook
+
+### The suppliers a clerk can capture an invoice for: those with an order still open to invoices
+GET {{gateway}}/invoices/suppliers?limit=20
+Authorization: Bearer {{alice.response.body.access_token}}
+
+### That supplier's orders an invoice can still bill, with the lines to prefill the invoice from
+GET {{gateway}}/invoices/purchase-orders?supplierId={{supplierId}}
+Authorization: Bearer {{alice.response.body.access_token}}
 
 ### Capture an invoice; it is matched at once against the order and what was received (id makes a retry safe)
 # @name capture
@@ -84,6 +92,10 @@ Authorization: Bearer {{tess.response.body.access_token}}
 Content-Type: application/json
 
 { "executionDate": "{{$datetime 'yyyy-MM-dd'}}" }
+
+### List payment runs, newest first; status=Draft shows the ones waiting for a second treasurer
+GET {{gateway}}/payment-runs?status=Draft&limit=20
+Authorization: Bearer {{trevor.response.body.access_token}}
 
 ### Read the run, per supplier, with account numbers masked
 GET {{gateway}}/payment-runs/{{draft.response.body.id}}

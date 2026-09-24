@@ -4,6 +4,8 @@ import { routes as approvals } from "./approvals/routes";
 import { routes as budgets } from "./budgets/routes";
 import { routes as costCentres } from "./cost-centres/routes";
 import { routes as inbox } from "./inbox/routes";
+import { routes as invoices } from "./invoices/routes";
+import { routes as paymentRuns } from "./payment-runs/routes";
 import { routes as purchaseOrders } from "./purchase-orders/routes";
 import { routes as requisitions } from "./requisitions/routes";
 import { routes as suppliers } from "./suppliers/routes";
@@ -15,6 +17,8 @@ export const routes: RouteRecordRaw[] = [
     ...requisitions,
     ...approvals,
     ...purchaseOrders,
+    ...invoices,
+    ...paymentRuns,
     ...suppliers,
     ...costCentres,
     ...budgets,

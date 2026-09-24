@@ -20,6 +20,6 @@ public sealed class ClearSuspectedDuplicateHandler(IPayablesDb db, InvoiceMatche
         await matcher.MatchAsync(order, invoice, now, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-        return InvoiceView.From(invoice);
+        return await db.ViewAsync(invoice, cancellationToken);
     }
 }

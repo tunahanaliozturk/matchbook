@@ -8,6 +8,27 @@ export type AcceptPriceVarianceRequest = {
     reason: null | string;
 };
 
+export type BillablePurchaseOrder = {
+    id: string;
+    number: string;
+    supplierId: string;
+    issuedAt: string;
+    lines: Array<BillablePurchaseOrderLine>;
+};
+
+export type BillablePurchaseOrderLine = {
+    lineNumber: number;
+    quantity: number;
+    unitPrice: number;
+};
+
+export type BillableSupplier = {
+    id: string;
+    legalName: string;
+    isActive: boolean;
+    paymentTermsDays: number;
+};
+
 export type CaptureInvoiceLineRequest = {
     lineNumber: null | number;
     quantity: null | number;
@@ -64,6 +85,7 @@ export type InvoiceSummary = {
     reason: null | MatchReason;
     capturedAt: string;
     dueDate: null | string;
+    supplierName: null | string;
 };
 
 export type InvoiceView = {
@@ -86,12 +108,29 @@ export type InvoiceView = {
     matchedAt: null | string;
     dueDate: null | string;
     paidAt: null | string;
+    supplierName: null | string;
+    purchaseOrderNumber: null | string;
 };
 
 export type MatchReason = 'None' | 'OrderUnknown' | 'OrderCancelled' | 'SupplierMismatch' | 'LineNotOnOrder' | 'QuantityExceedsReceived' | 'PriceVarianceBeyondTolerance' | 'PriceVarianceAccepted';
 
+export type PageOfBillablePurchaseOrder = {
+    items: Array<BillablePurchaseOrder>;
+    next: null | string;
+};
+
+export type PageOfBillableSupplier = {
+    items: Array<BillableSupplier>;
+    next: null | string;
+};
+
 export type PageOfInvoiceSummary = {
     items: Array<InvoiceSummary>;
+    next: null | string;
+};
+
+export type PageOfPaymentRunSummary = {
+    items: Array<PaymentRunSummary>;
     next: null | string;
 };
 
@@ -108,6 +147,20 @@ export type PaymentRunCreditorView = {
 };
 
 export type PaymentRunStatus = 'Draft' | 'Released' | 'Cancelled';
+
+export type PaymentRunSummary = {
+    id: string;
+    executionDate: string;
+    status: PaymentRunStatus;
+    draftedBy: string;
+    draftedAt: string;
+    releasedBy: null | string;
+    releasedAt: null | string;
+    itemCount: number;
+    total: number;
+    paidCount: number;
+    paidTotal: number;
+};
 
 export type PaymentRunView = {
     id: string;
@@ -250,6 +303,79 @@ export type ListInvoiceExceptionsResponses = {
 
 export type ListInvoiceExceptionsResponse = ListInvoiceExceptionsResponses[keyof ListInvoiceExceptionsResponses];
 
+export type ListBillableSuppliersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        after?: string;
+        limit?: number;
+    };
+    url: '/invoices/suppliers';
+};
+
+export type ListBillableSuppliersErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type ListBillableSuppliersError = ListBillableSuppliersErrors[keyof ListBillableSuppliersErrors];
+
+export type ListBillableSuppliersResponses = {
+    /**
+     * OK
+     */
+    200: PageOfBillableSupplier;
+};
+
+export type ListBillableSuppliersResponse = ListBillableSuppliersResponses[keyof ListBillableSuppliersResponses];
+
+export type ListBillablePurchaseOrdersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        supplierId?: string;
+        after?: string;
+        limit?: number;
+    };
+    url: '/invoices/purchase-orders';
+};
+
+export type ListBillablePurchaseOrdersErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type ListBillablePurchaseOrdersError = ListBillablePurchaseOrdersErrors[keyof ListBillablePurchaseOrdersErrors];
+
+export type ListBillablePurchaseOrdersResponses = {
+    /**
+     * OK
+     */
+    200: PageOfBillablePurchaseOrder;
+};
+
+export type ListBillablePurchaseOrdersResponse = ListBillablePurchaseOrdersResponses[keyof ListBillablePurchaseOrdersResponses];
+
 export type GetInvoiceData = {
     body?: never;
     path: {
@@ -370,6 +496,43 @@ export type ClearSuspectedDuplicateResponses = {
 };
 
 export type ClearSuspectedDuplicateResponse = ClearSuspectedDuplicateResponses[keyof ClearSuspectedDuplicateResponses];
+
+export type ListPaymentRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        status?: PaymentRunStatus;
+        after?: string;
+        limit?: number;
+    };
+    url: '/payment-runs';
+};
+
+export type ListPaymentRunsErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type ListPaymentRunsError = ListPaymentRunsErrors[keyof ListPaymentRunsErrors];
+
+export type ListPaymentRunsResponses = {
+    /**
+     * OK
+     */
+    200: PageOfPaymentRunSummary;
+};
+
+export type ListPaymentRunsResponse = ListPaymentRunsResponses[keyof ListPaymentRunsResponses];
 
 export type DraftPaymentRunData = {
     body: DraftPaymentRunRequest;

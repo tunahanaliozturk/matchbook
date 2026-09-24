@@ -18,11 +18,14 @@ public sealed class ApiSurfaceTests(PayablesFixture fixture) : IClassFixture<Pay
     {
         { "GET", "/invoices" },
         { "GET", "/invoices/exceptions" },
+        { "GET", "/invoices/suppliers" },
+        { "GET", "/invoices/purchase-orders" },
         { "GET", $"/invoices/{Guid.Empty}" },
         { "POST", "/invoices" },
         { "POST", $"/invoices/{Guid.Empty}/accept-price-variance" },
         { "POST", $"/invoices/{Guid.Empty}/clear-suspected-duplicate" },
         { "POST", "/payment-runs" },
+        { "GET", "/payment-runs" },
         { "GET", $"/payment-runs/{Guid.Empty}" },
         { "POST", $"/payment-runs/{Guid.Empty}/release" },
         { "POST", $"/payment-runs/{Guid.Empty}/cancel" },
@@ -48,6 +51,10 @@ public sealed class ApiSurfaceTests(PayablesFixture fixture) : IClassFixture<Pay
     [InlineData("POST", "/payment-runs", "alice")]
     [InlineData("POST", "/payment-runs", "audrey")]
     [InlineData("GET", "/payment-runs/00000000-0000-0000-0000-000000000000", "alice")]
+    [InlineData("GET", "/payment-runs", "alice")]
+    [InlineData("GET", "/invoices/suppliers", "aaron")]
+    [InlineData("GET", "/invoices/purchase-orders", "tess")]
+    [InlineData("GET", "/invoices/purchase-orders", "audrey")]
     [InlineData("POST", "/invoices/00000000-0000-0000-0000-000000000000/accept-price-variance", "tess")]
     public async Task Each_action_is_refused_to_the_roles_it_is_not_for(string method, string path, string user)
     {
@@ -119,7 +126,8 @@ public sealed class ApiSurfaceTests(PayablesFixture fixture) : IClassFixture<Pay
         [
             ("post", "/invoices"), ("get", "/invoices"), ("get", "/invoices/exceptions"), ("get", "/invoices/{id}"),
             ("post", "/invoices/{id}/accept-price-variance"), ("post", "/invoices/{id}/clear-suspected-duplicate"),
-            ("post", "/payment-runs"), ("get", "/payment-runs/{id}"), ("post", "/payment-runs/{id}/release"),
+            ("get", "/invoices/suppliers"), ("get", "/invoices/purchase-orders"),
+            ("post", "/payment-runs"), ("get", "/payment-runs"), ("get", "/payment-runs/{id}"), ("post", "/payment-runs/{id}/release"),
             ("post", "/payment-runs/{id}/cancel"), ("get", "/payment-runs/{id}/file"),
         ])
         {

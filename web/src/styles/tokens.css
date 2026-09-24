@@ -31,8 +31,9 @@
 
     /* Action */
     --accent: #0071e3;
-    --accent-hover: #0077ed;
-    --accent-pressed: #006edb;
+    /* Hover and press darken rather than lighten, so white text keeps 4.5:1 under the pointer too. */
+    --accent-hover: #006ad6;
+    --accent-pressed: #0062c9;
     --accent-text: #0066cc;
     --accent-soft: rgb(0 113 227 / 12%);
     --focus-ring: rgb(0 113 227 / 50%);
@@ -128,7 +129,7 @@
         --field-border: rgb(255 255 255 / 18%);
 
         --accent: #0a6fdb; /* system blue is 3.6:1 under white text; this keeps 4.8:1 */
-        --accent-hover: #1a7ae6;
+        --accent-hover: #0b6ad4;
         --accent-pressed: #0a64c8;
         --accent-text: #409cff;
         --accent-soft: rgb(10 132 255 / 18%);
