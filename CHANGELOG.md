@@ -42,6 +42,10 @@ First release. Everything below is covered by the test suites or by a published 
 - System tests that run a purchase end to end, then thirty more through a broker restart and two services killed
   with SIGKILL, and reconcile five databases on eight invariants afterwards
   (`docs/measurements/chaos.md`).
+- An invoice captured at the moment Payables applies a change to its order retries on a fresh copy of the order,
+  up to three times, instead of answering 409 to a clerk who did nothing wrong.
+- Numbers in every contract are JSON numbers and nothing else: a quoted amount is refused with 400, where it was
+  once quietly accepted, so a generated client can type amounts as numbers.
 
 ### Operations
 
@@ -49,3 +53,24 @@ First release. Everything below is covered by the test suites or by a published 
   service under the `matchbook.` prefix.
 - `docs/operations.md`: configuration, what to watch, a runbook per anticipated failure, known limitations.
 - A licence audit in CI that fails on any commercially licensed package at any depth.
+
+### Console
+
+- A Vue 3 console served by nginx on port 5301, one screen per job: suppliers and bank accounts, cost centres and
+  budgets, requisitions and approvals, purchase orders and receipts, invoices and their exceptions, and payment
+  runs with the bank file. Each person's inbox gathers the decisions waiting on their roles.
+- Sign-in through Keycloak with PKCE; the access token is kept in memory and never written to storage.
+- A client generated from the services' OpenAPI documents that validates every response with Zod, and a CI step
+  that regenerates it against the running stack and fails on any difference.
+- A Content Security Policy with no inline script and no `eval`, and five browser journeys that fail on any
+  violation of it and on any serious WCAG 2 AA finding in the light or the dark appearance.
+- Read endpoints the console needed, each answered from the service's own copies so no role gains access to
+  another service: cost centres and suppliers for the requisition form, billable suppliers and orders for invoice
+  capture, supplier names on orders and invoices, a list of payment runs, a status filter on requisitions and an
+  `awaitingGoods` filter on purchase orders. All are additive; no existing field changed.
+
+### Code layout
+
+- Every service's application layer is organised by feature, with each command and query in its own folder beside
+  its one handler, and no mediator (ADR 0008). An architecture test enforces the layout, one handler per request,
+  and that no query handler can publish an event or run a command.

@@ -3,8 +3,8 @@
 [![ci](https://github.com/tunahanaliozturk/matchbook/actions/workflows/ci.yml/badge.svg)](https://github.com/tunahanaliozturk/matchbook/actions/workflows/ci.yml)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-The purchase-to-pay half of an ERP as five .NET 10 microservices: request, approve against a budget, order,
-receive, match the invoice three ways, pay.
+The purchase-to-pay half of an ERP as five .NET 10 microservices and a Vue console: request, approve against a
+budget, order, receive, match the invoice three ways, pay.
 
 **Thirty purchases run while RabbitMQ restarts and the two services that hold money are killed with SIGKILL.
 Every invoice is still paid exactly once, and the five databases reconcile to the cent on eight cross-service
@@ -14,21 +14,24 @@ single cent put wrong by hand.
 
 ## Quick start
 
-Needs Docker and the .NET 10 SDK.
+Needs Docker and the .NET 10 SDK; Node 24 for the browser journeys.
 
 ```
 git clone https://github.com/tunahanaliozturk/matchbook.git && cd matchbook
 docker compose up -d --build --wait
 dotnet run --project tests/Matchbook.SystemTests
+cd web && npm ci && npx playwright install chromium && npm run test:e2e
 ```
 
-`docker compose up` builds six images and starts ten containers. The system tests then walk a purchase from
-request to payment through the gateway, run the chaos test above, and reconcile after each. CI runs exactly
-these commands on every push.
+`docker compose up` builds seven images and starts eleven containers. The system tests then walk a purchase from
+request to payment through the gateway, run the chaos test above, and reconcile after each. The journeys sign
+people in through Keycloak and hand the work from one person to the next in the console. CI runs exactly these
+commands on every push.
 
-To try it by hand, open the `http/` folder in an editor that runs `.http` files, starting with
-`http/suppliers.http`, then `budgets`, `requisitions`, `purchasing` and `payables`. Every seeded user's password
-is `matchbook` (the list is in `docs/design.md`). Traces, metrics and logs are in the Aspire dashboard at
+To try it by hand, open the console at http://localhost:5301 and sign in as `rita` to raise a requisition, `mark`
+to approve it, and so on through `bruno`, `rosa`, `alice`, `tess` and `trevor`. Every seeded user's password is
+`matchbook` (the list is in `docs/design.md`). The `http/` folder has every endpoint for an editor that runs
+`.http` files, starting with `http/suppliers.http`. Traces, metrics and logs are in the Aspire dashboard at
 http://localhost:18888.
 
 ## How a purchase moves
@@ -49,6 +52,26 @@ No service calls another over HTTP. Each owns one Postgres database, publishes t
 consumes through an inbox, and the gateway (YARP) is the only way in. Separation of duties is enforced in the
 domain, not the UI: nobody approves their own requisition, the receiver cannot be the buyer who issued the order,
 and a bank account change, a supplier activation and a payment run each need a second person.
+
+## The console
+
+![A budget with its encumbrance capsule: spent, ordered, requested and available, over the ledger that produced them](docs/screenshots/budget-light.png)
+
+One screen per job, and each person sees only their own: rita's inbox holds drafts to finish and refusals to read,
+mark's the requisitions waiting on the cost centres they manage, trevor's the payment runs another treasurer
+drafted. The inbox is built from one
+queue per decision, contributed by the feature that owns it, so a slow service delays only its own section.
+
+| | |
+|---|---|
+| ![A closed requisition with its lines, approval route and purchase order, in the dark appearance](docs/screenshots/requisition-dark.png) | ![A matched invoice with its lines and history](docs/screenshots/invoice-light.png) |
+
+It is a Vue 3 single-page app behind nginx, with a small design system of its own rather than a component
+library (ADR 0009). The access token lives in memory only, never in storage a script could read. The client is
+generated from the services' OpenAPI documents and checks every response against a Zod schema; CI regenerates it
+against the running stack and fails on any difference.
+Every journey runs axe in the light and the dark appearance and fails on a single Content Security Policy
+violation; the policy allows no inline script and no `eval`.
 
 ## The decision worth arguing with
 
@@ -76,22 +99,28 @@ has a fair case; ADR 0002 names it and says why it lost here.
 | Money reconciles across all five databases after restarts and kills | `ChaosTests`, `docs/measurements/chaos.md` |
 | A 5,000 invoice payment run drafts in 1.5 to 2.4 s and releases in 2.0 to 3.1 s | `PaymentRunScaleTests`, `docs/services/payables.md` |
 | No project references another service's projects, and Domain references nothing but the shared kernel | `tests/Matchbook.ArchitectureTests` |
+| Every command and query lives in its feature folder with exactly one handler, and no query can publish | `FeatureLayoutTests` (ADR 0008) |
+| The screens the journeys visit meet WCAG 2 AA in both appearances | 34 axe checks across the five journeys, each in light and dark (`expectAccessible`, `web/e2e/support.ts`) |
+| The console agrees with the services' contracts | The contract drift step in CI, against the running stack |
 
 Against real Postgres 18 and RabbitMQ 4.3 in containers throughout; there is no in-memory database or transport
-anywhere in the tests. 666 unit tests, 204 integration tests, 30 architecture tests and 2 system tests.
+anywhere in the tests. 666 unit tests, 223 integration tests, 75 architecture tests and 2 system tests on the
+services; 55 unit tests and 5 browser journeys on the console.
 
 ## Stack
 
 .NET 10 and C# 14, ASP.NET Core minimal APIs, EF Core 10 on Npgsql, MassTransit 8.5 with the Entity Framework
 outbox and inbox, RabbitMQ, YARP, Keycloak, OpenTelemetry to the Aspire dashboard. xUnit v3 with Shouldly and
-FsCheck, Testcontainers. MassTransit is pinned to 8.5 because version 9 is commercially licensed; a licence
-audit in CI (`tools/Matchbook.LicenseAudit`) fails the build on any package, at any depth, whose licence would
-cost a commercial user money.
+FsCheck, Testcontainers. The console is Vue 3.5 with Vite, TanStack Query, Zod, a client generated by
+`@hey-api/openapi-ts`, `oidc-client-ts` for the PKCE sign-in and two Reka UI primitives, tested with Vitest,
+Playwright and axe. MassTransit is pinned to 8.5 because version 9 is commercially licensed; a licence
+audit in CI (`tools/Matchbook.LicenseAudit`, and `web/scripts/licence-audit.mjs` for npm) fails the build on any
+package, at any depth, whose licence would cost a commercial user money.
 
 ## Further reading
 
 - `docs/design.md`: the contract the services are built to, including every cross-service invariant.
-- `docs/adr/`: seven decisions, each with the alternatives that lost.
+- `docs/adr/`: nine decisions, each with the alternatives that lost.
 - `docs/services/`: one document per service: states, rules, what the database enforces, metrics, and the
   decisions its author made.
 - `docs/operations.md`: configuration, what to watch, a runbook per anticipated failure, known limitations.
@@ -105,6 +134,8 @@ The full list is in `docs/operations.md`. The ones a reviewer is most likely to 
   inbox drops the copy, but anything else listening to the broker has to do the same.
 - The reconciler runs only in the tests, not on a schedule.
 - One currency, one replica per service tested, migrations run at startup.
+- The console names people from a directory compiled into it, because a person's own token cannot list
+  Keycloak's users; a deployment would read it from the identity provider.
 
 ## Licence
 
