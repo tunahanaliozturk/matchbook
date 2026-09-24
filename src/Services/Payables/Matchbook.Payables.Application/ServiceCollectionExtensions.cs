@@ -9,12 +9,13 @@ namespace Matchbook.Payables.Application;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the handlers. The host provides <see cref="IPayablesDb"/>, the event publisher and
-    /// <see cref="PayerAccount"/>.
+    /// Registers the handlers and the metrics. The host provides <see cref="IPayablesDb"/>, the event publisher, the
+    /// field protector, <see cref="PayerAccount"/> and an <c>IMeterFactory</c>.
     /// </summary>
     public static IServiceCollection AddPayablesApplication(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<PayablesMetrics>();
 
         services.AddScoped<InvoiceMatcher>();
         services.AddScoped<CaptureInvoiceHandler>();

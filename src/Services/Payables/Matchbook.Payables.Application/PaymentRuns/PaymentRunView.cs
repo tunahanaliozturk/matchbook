@@ -1,3 +1,4 @@
+using Matchbook.Payables.Domain;
 using Matchbook.Payables.Domain.PaymentRuns;
 
 namespace Matchbook.Payables.Application.PaymentRuns;
@@ -40,7 +41,7 @@ public sealed record PaymentRunView(
             [.. run.Creditors.Select(creditor => new PaymentRunCreditorView(
                 creditor.SupplierId,
                 creditor.AccountHolder,
-                creditor.Iban.Masked,
+                Iban.Mask(creditor.IbanLastFour),
                 creditor.Bic.Value,
                 creditor.AccountVersion,
                 creditor.ItemCount,

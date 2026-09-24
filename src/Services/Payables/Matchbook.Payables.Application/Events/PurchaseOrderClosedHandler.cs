@@ -24,7 +24,7 @@ public sealed class PurchaseOrderClosedHandler(IPayablesDb db, InvoiceMatcher ma
             return;
         }
 
-        await matcher.RematchWaitingAsync(order, arrived: null, time.GetUtcNow(), cancellationToken);
+        await matcher.RematchWaitingAsync(order, arrived: null, RematchTriggers.OrderClosed, time.GetUtcNow(), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 }

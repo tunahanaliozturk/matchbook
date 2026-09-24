@@ -30,7 +30,7 @@ public sealed class GoodsReceivedHandler(IPayablesDb db, InvoiceMatcher matcher,
         // Claimed even when the order has not arrived: an order arriving at the same moment then conflicts with this
         // receipt instead of summing the receipts without it.
         PurchaseOrder order = await matcher.ClaimOrderAsync(message.PurchaseOrderId, cancellationToken);
-        await matcher.RematchWaitingAsync(order, receipt, time.GetUtcNow(), cancellationToken);
+        await matcher.RematchWaitingAsync(order, receipt, RematchTriggers.GoodsReceived, time.GetUtcNow(), cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
     }

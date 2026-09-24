@@ -8,7 +8,9 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
 {
     public void Configure(EntityTypeBuilder<Supplier> builder)
     {
-        builder.ToTable("suppliers");
+        builder.ToTable("suppliers", table => table.HasCheckConstraint(
+            "ck_suppliers_account_iban_protected",
+            $"account_protected_iban IS NULL OR account_protected_iban LIKE '{BankColumns.ProtectedPrefix}%'"));
         builder.HasKey(supplier => supplier.Id);
         builder.Property(supplier => supplier.Id).ValueGeneratedNever();
 
@@ -20,7 +22,8 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.ComplexProperty(supplier => supplier.Account, account =>
         {
             account.Property(a => a.AccountVersion).HasColumnName("account_version");
-            account.Property(a => a.Iban).HasColumnName("account_iban").IsIban();
+            account.Property(a => a.ProtectedIban).HasColumnName("account_protected_iban");
+            account.Property(a => a.IbanLastFour).HasColumnName("account_iban_last_four").HasMaxLength(4);
             account.Property(a => a.Bic).HasColumnName("account_bic").IsBic();
             account.Property(a => a.AccountHolder).HasColumnName("account_holder").HasMaxLength(200);
         });

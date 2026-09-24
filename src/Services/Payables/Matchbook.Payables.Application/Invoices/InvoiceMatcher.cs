@@ -11,7 +11,7 @@ namespace Matchbook.Payables.Application.Invoices;
 /// and every fact that arrives about its order. It claims the order's local row, works out what has been received
 /// and invoiced per line, runs the match and publishes <see cref="InvoiceMatched"/> for each invoice that passed.
 /// </summary>
-public sealed class InvoiceMatcher(IPayablesDb db, IEventPublisher publisher)
+public sealed class InvoiceMatcher(IPayablesDb db, IEventPublisher publisher, PayablesMetrics metrics)
 {
     /// <summary>
     /// Loads the order's local row for change, creating it on the first mention. Either way the row is written in
@@ -42,11 +42,13 @@ public sealed class InvoiceMatcher(IPayablesDb db, IEventPublisher publisher)
 
     /// <summary>
     /// Matches again every invoice waiting on a claimed order. <paramref name="arrived"/> is a receipt added in this
-    /// unit of work and not yet saved, so the position has to be told about it.
+    /// unit of work and not yet saved, so the position has to be told about it. <paramref name="trigger"/> names what
+    /// arrived, for the metrics.
     /// </summary>
     public async Task RematchWaitingAsync(
         PurchaseOrder order,
         Receipt? arrived,
+        string trigger,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -68,6 +70,7 @@ public sealed class InvoiceMatcher(IPayablesDb db, IEventPublisher publisher)
         }
 
         await EvaluateAsync(order, position, waiting, now, cancellationToken);
+        metrics.Rematched(trigger, waiting.Count);
     }
 
     private async Task EvaluateAsync(
@@ -84,7 +87,13 @@ public sealed class InvoiceMatcher(IPayablesDb db, IEventPublisher publisher)
                 .SingleOrDefaultAsync(cancellationToken)
             : null;
 
-        foreach (Invoice invoice in InvoiceMatching.Evaluate(invoices, order, position, paymentTermsDays, now))
+        IReadOnlyList<Invoice> matched = InvoiceMatching.Evaluate(invoices, order, position, paymentTermsDays, now);
+        foreach (Invoice invoice in invoices)
+        {
+            metrics.Evaluated(invoice);
+        }
+
+        foreach (Invoice invoice in matched)
         {
             await publisher.PublishAsync(
                 new InvoiceMatched(

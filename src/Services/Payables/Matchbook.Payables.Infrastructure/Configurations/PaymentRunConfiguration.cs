@@ -23,12 +23,14 @@ internal sealed class PaymentRunConfiguration : IEntityTypeConfiguration<Payment
 
         builder.OwnsMany(run => run.Creditors, creditors =>
         {
-            creditors.ToTable("payment_run_creditors");
+            creditors.ToTable("payment_run_creditors", table => table.HasCheckConstraint(
+                "ck_payment_run_creditors_iban_protected",
+                $"protected_iban LIKE '{BankColumns.ProtectedPrefix}%'"));
             creditors.WithOwner().HasForeignKey("PaymentRunId");
             creditors.HasKey("PaymentRunId", nameof(PaymentRunCreditor.SupplierId));
             creditors.Property(creditor => creditor.SupplierId).ValueGeneratedNever();
             creditors.Property(creditor => creditor.AccountHolder).HasMaxLength(200);
-            creditors.Property(creditor => creditor.Iban).IsIban();
+            creditors.Property(creditor => creditor.IbanLastFour).HasMaxLength(4);
             creditors.Property(creditor => creditor.Bic).IsBic();
             creditors.Property(creditor => creditor.Total).HasPrecision(18, 2);
             creditors.Property(creditor => creditor.Status).HasConversion<string>().HasMaxLength(Columns.EnumLength);

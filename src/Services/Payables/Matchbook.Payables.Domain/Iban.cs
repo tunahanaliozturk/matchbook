@@ -6,9 +6,10 @@ namespace Matchbook.Payables.Domain;
 /// An international bank account number, stored upper case without spaces, checked by shape and mod 97.
 /// </summary>
 /// <remarks>
-/// Suppliers validates accounts before it verifies them, so this is a second look rather than the gate. It is its
-/// own type for two reasons: persistence maps it in one place, which is where encryption at rest plugs in, and
-/// <see cref="ToString"/> masks it, so a log line that formats one by accident does not leak it.
+/// An IBAN in this shape exists only in memory, while an incoming account is checked and while a bank file is
+/// written; everywhere else Payables holds the ciphertext Suppliers sent (ADR 0007). Suppliers validates accounts
+/// before it verifies them, so this is a second look rather than the gate. <see cref="ToString"/> masks it, so a log
+/// line that formats one by accident does not leak it.
 /// </remarks>
 public sealed record Iban
 {
@@ -16,8 +17,10 @@ public sealed record Iban
 
     public string Value { get; }
 
+    public string LastFour => Value[^4..];
+
     /// <summary>The last four characters behind a mask, which is all a response or a log line should show.</summary>
-    public string Masked => string.Concat("****", Value.AsSpan(Value.Length - 4));
+    public string Masked => Mask(LastFour);
 
     public static Iban Parse(string value)
     {
@@ -29,6 +32,8 @@ public sealed record Iban
             ? new Iban(compact)
             : throw new BusinessRuleException("iban.invalid", "The IBAN is not valid.", ViolationKind.Invalid);
     }
+
+    public static string Mask(string lastFour) => "****" + lastFour;
 
     public override string ToString() => Masked;
 

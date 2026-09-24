@@ -83,4 +83,8 @@ public sealed record SupplierSnapshot(
 /// A verified bank account. <see cref="AccountVersion"/> rises with every approved change, which is how a payment
 /// run tells that the account it was drafted against is no longer the current one.
 /// </summary>
-public sealed record SupplierAccount(int AccountVersion, Iban Iban, Bic Bic, string AccountHolder);
+/// <remarks>
+/// <see cref="ProtectedIban"/> is the account number encrypted under the payment-data key, as Suppliers sent it.
+/// The domain never needs the number itself: it compares versions, and shows <see cref="IbanLastFour"/>.
+/// </remarks>
+public sealed record SupplierAccount(int AccountVersion, string ProtectedIban, string IbanLastFour, Bic Bic, string AccountHolder);

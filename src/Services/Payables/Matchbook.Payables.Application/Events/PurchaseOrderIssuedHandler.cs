@@ -22,7 +22,7 @@ public sealed class PurchaseOrderIssuedHandler(IPayablesDb db, InvoiceMatcher ma
             return;
         }
 
-        await matcher.RematchWaitingAsync(order, arrived: null, time.GetUtcNow(), cancellationToken);
+        await matcher.RematchWaitingAsync(order, arrived: null, RematchTriggers.OrderIssued, time.GetUtcNow(), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 }

@@ -13,19 +13,12 @@ public sealed class SupplierChangedHandler(IPayablesDb db, IFieldProtector prote
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        SupplierAccount? account = message.BankAccount is { } verified
-            ? new SupplierAccount(
-                verified.AccountVersion,
-                Iban.Parse(protector.Unprotect(verified.ProtectedIban)),
-                Bic.Parse(verified.Bic),
-                verified.AccountHolder)
-            : null;
         var snapshot = new SupplierSnapshot(
             message.Version,
             message.LegalName,
             string.Equals(message.Status, SupplierStatus.Active, StringComparison.Ordinal),
             message.PaymentTermsDays,
-            account,
+            message.BankAccount is { } verified ? Account(verified) : null,
             message.OccurredAt.ToUniversalTime());
 
         Supplier? supplier = await db.Suppliers.SingleOrDefaultAsync(s => s.Id == message.SupplierId, cancellationToken);
@@ -39,5 +32,16 @@ public sealed class SupplierChangedHandler(IPayablesDb db, IFieldProtector prote
         }
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Decrypts the account number only to check it, and keeps the ciphertext Suppliers sent. Both services hold the
+    /// same key, so there is nothing to gain from encrypting it again, and the plain number never reaches a column.
+    /// The last four characters come from the number itself rather than from the event's display field.
+    /// </summary>
+    private SupplierAccount Account(VerifiedBankAccount verified)
+    {
+        Iban iban = Iban.Parse(protector.Unprotect(verified.ProtectedIban));
+        return new SupplierAccount(verified.AccountVersion, verified.ProtectedIban, iban.LastFour, Bic.Parse(verified.Bic), verified.AccountHolder);
     }
 }
