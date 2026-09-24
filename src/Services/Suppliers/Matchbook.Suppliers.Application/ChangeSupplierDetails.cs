@@ -11,19 +11,26 @@ public sealed record ChangeSupplierDetails(
     int PaymentTermsDays,
     string ContactEmail);
 
-/// <summary>A supplier admin corrects the details. A new name, country or terms is published once active.</summary>
-public sealed class ChangeSupplierDetailsHandler(ISuppliersDb db, SupplierCommandRunner runner)
+/// <summary>
+/// A supplier admin corrects the details. A new name, country or terms is published once active. A tax id
+/// another supplier holds is refused by the unique index, as on create.
+/// </summary>
+public sealed class ChangeSupplierDetailsHandler(SupplierCommandRunner runner)
 {
-    public async Task<SupplierView> HandleAsync(
-        ChangeSupplierDetails command, Actor actor, CancellationToken cancellationToken)
+    public Task<SupplierView> HandleAsync(ChangeSupplierDetails command, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        SupplierDetails details = SupplierDetails.Create(
-            command.LegalName, command.TaxId, command.CountryCode, command.PaymentTermsDays, command.ContactEmail);
-        await db.EnsureTaxIdIsFreeAsync(details.TaxId, command.SupplierId, cancellationToken);
-
-        return await runner.RunAsync(
-            command.SupplierId, actor, (supplier, _) => supplier.ChangeDetails(actor, details), cancellationToken);
+        return runner.RunAsync(
+            command.SupplierId,
+            actor,
+            "details_changed",
+            (supplier, _) => supplier.ChangeDetails(actor, SupplierDetails.Create(
+                command.LegalName,
+                command.TaxId,
+                command.CountryCode,
+                command.PaymentTermsDays,
+                command.ContactEmail)),
+            cancellationToken);
     }
 }

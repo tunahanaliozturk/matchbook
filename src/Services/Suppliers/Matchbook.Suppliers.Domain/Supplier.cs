@@ -80,12 +80,16 @@ public sealed class Supplier
     public BankAccount? PendingAccount =>
         _bankAccounts.SingleOrDefault(account => account.Status == BankAccountStatus.Pending);
 
-    public static Supplier Create(Actor actor, SupplierDetails details, DateTimeOffset now)
+    /// <summary>
+    /// The id comes from the caller so a client can retry a create it never heard back from without making a
+    /// second supplier.
+    /// </summary>
+    public static Supplier Create(Actor actor, Guid id, SupplierDetails details, DateTimeOffset now)
     {
         RequireRole(actor, Roles.SupplierAdmin, "create a supplier");
 
         return new Supplier(
-            Guid.CreateVersion7(now),
+            id,
             details.LegalName,
             details.TaxId,
             details.Country,
@@ -97,6 +101,13 @@ public sealed class Supplier
             CreatedAt = now,
         };
     }
+
+    public bool HasDetails(SupplierDetails details) =>
+        LegalName == details.LegalName
+        && TaxId == details.TaxId
+        && Country == details.Country
+        && PaymentTermsDays == details.PaymentTermsDays
+        && ContactEmail == details.ContactEmail;
 
     /// <summary>
     /// One person may change the details in any state. Only the bank account and activation are under four
@@ -184,7 +195,8 @@ public sealed class Supplier
     /// Records a new account for a second person to approve. The verified account stays in force meanwhile, so
     /// a payment run drafted now still pays the account it was drafted against.
     /// </summary>
-    public BankAccount ProposeBankAccount(Actor actor, Iban iban, Bic bic, string? accountHolder, DateTimeOffset now)
+    public BankAccount ProposeBankAccount(
+        Actor actor, Guid id, Iban iban, Bic bic, string? accountHolder, DateTimeOffset now)
     {
         RequireRole(actor, Roles.SupplierAdmin, "propose a bank account");
 
@@ -206,7 +218,7 @@ public sealed class Supplier
                 ViolationKind.Conflict);
         }
 
-        var account = BankAccount.Propose(Id, iban, bic, accountHolder, actor, now);
+        var account = BankAccount.Propose(id, Id, iban, bic, accountHolder, actor, now);
         _bankAccounts.Add(account);
         return account;
     }

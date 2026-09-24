@@ -126,7 +126,7 @@ public sealed class BankAccountTests
         Bic sameBic = Bic.Parse("deutdeff");
 
         BrokenRule.Expect("supplier.bank_account_unchanged", ViolationKind.Conflict, () =>
-            supplier.ProposeBankAccount(People.Admin, sameIban, sameBic, " Acme GmbH ", Given.Now));
+            supplier.ProposeBankAccount(People.Admin, Guid.NewGuid(), sameIban, sameBic, " Acme GmbH ", Given.Now));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public sealed class BankAccountTests
         Supplier supplier = Given.Active();
 
         BankAccount proposal = supplier.ProposeBankAccount(
-            People.Admin, Iban.Parse(TestIbans.German), Given.Bic, "Acme Europe GmbH", Given.Now);
+            People.Admin, Guid.CreateVersion7(), Iban.Parse(TestIbans.German), Given.Bic, "Acme Europe GmbH", Given.Now);
 
         proposal.Status.ShouldBe(BankAccountStatus.Pending);
     }
@@ -235,5 +235,6 @@ public sealed class BankAccountTests
     }
 
     private static BankAccount ProposeHeldBy(string? holder) =>
-        Given.Draft().ProposeBankAccount(People.Admin, Iban.Parse(TestIbans.German), Given.Bic, holder, Given.Now);
+        Given.Draft().ProposeBankAccount(
+            People.Admin, Guid.CreateVersion7(), Iban.Parse(TestIbans.German), Given.Bic, holder, Given.Now);
 }
