@@ -14,12 +14,11 @@ public static class ServiceCollectionExtensions
     public const string ServiceName = "purchasing";
 
     /// <summary>
-    /// Everything Purchasing needs below the HTTP layer: the handlers, the database (migrated on start), and the
-    /// bus with one queue per consumed event, each behind the outbox and inbox.
+    /// The database (migrated on start) and the bus with one queue per consumed event, each behind the outbox and
+    /// inbox. The host registers the Application and its handlers.
     /// </summary>
     public static IServiceCollection AddPurchasingInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddPurchasingApplication();
         services.AddMatchbookDatabase<PurchasingDbContext, IPurchasingDb>(configuration);
         services.AddMatchbookMessaging<PurchasingDbContext>(configuration, ServiceName, static bus =>
         {

@@ -199,8 +199,9 @@ A lost race on the order row is 409 `concurrency.conflict` wherever it happens; 
 
 ## Messaging
 
-Each consumer is a thin MassTransit adapter over the Application handler of the same name, behind the shared
-outbox and inbox. Queues are named for the service and the event.
+Each consumer is a thin MassTransit adapter over the Application handler of the same name in
+`IntegrationEvents/`, which it asks for as `IIntegrationEventHandler<TEvent>`, behind the shared outbox and
+inbox. Queues are named for the service and the event.
 
 | Event | Queue | Idempotent through |
 |---|---|---|

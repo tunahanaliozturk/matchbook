@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using Matchbook.Purchasing.Application.PurchaseOrders;
+using Matchbook.Purchasing.Application.Features.PurchaseOrders;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;
 

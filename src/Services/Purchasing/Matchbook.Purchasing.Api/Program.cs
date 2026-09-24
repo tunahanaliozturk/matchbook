@@ -1,6 +1,8 @@
 using Matchbook.BuildingBlocks.Hosting;
 using Matchbook.BuildingBlocks.Security;
 using Matchbook.Purchasing.Api;
+using Matchbook.Purchasing.Api.Features.PurchaseOrders;
+using Matchbook.Purchasing.Application;
 using Matchbook.Purchasing.Infrastructure;
 using Matchbook.SharedKernel;
 
@@ -8,6 +10,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.AddMatchbookDefaults(ServiceCollectionExtensions.ServiceName);
 builder.Services.AddValidation();
+builder.Services.AddPurchasingApplication().AddHandlersFrom(typeof(IPurchasingDb).Assembly);
 builder.Services.AddPurchasingInfrastructure(builder.Configuration);
 builder.Services.AddAuthorizationBuilder()
     .AddRolePolicy(Policies.Read, Roles.Buyer, Roles.Receiver, Roles.Auditor)
