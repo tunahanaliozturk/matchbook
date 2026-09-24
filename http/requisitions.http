@@ -1,0 +1,168 @@
+# Requisitions through the gateway, against the compose stack (docker compose up).
+# Every password in the demo realm is "matchbook". Run the requests top to bottom.
+
+@gateway = http://localhost:5300/api
+@token = http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+
+# An active supplier's id, as Suppliers lists it at GET {{gateway}}/suppliers.
+@supplierId = 00000000-0000-0000-0000-000000000000
+
+# A client-chosen id: sending the create twice with it returns the first requisition, not a second one.
+@requisitionId = 0199b0f0-0000-7000-8000-000000000001
+
+### Rita, a requester, signs in.
+# @name rita
+POST {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=rita&password=matchbook
+
+### Mark, the manager of ENG-PLATFORM, signs in.
+# @name mark
+POST {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=mark&password=matchbook
+
+### Fiona, a finance approver, signs in.
+# @name fiona
+POST {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=fiona&password=matchbook
+
+### Rita drafts a requisition of 12,500.00, over the finance threshold, under her own id.
+POST {{gateway}}/requisitions
+Authorization: Bearer {{rita.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "{{requisitionId}}",
+  "costCentreCode": "ENG-PLATFORM",
+  "supplierId": "{{supplierId}}",
+  "justification": "Laptops for the two new platform engineers",
+  "neededBy": "2027-06-30",
+  "lines": [
+    { "description": "Laptop", "quantity": 5, "unitOfMeasure": "EA", "unitPrice": 2400.00 },
+    { "description": "Laptop bag", "quantity": 20, "unitOfMeasure": "EA", "unitPrice": 25.00 }
+  ]
+}
+
+### Rita sends exactly the same create again, as a client would after a timeout: 201 with the same requisition.
+POST {{gateway}}/requisitions
+Authorization: Bearer {{rita.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "{{requisitionId}}",
+  "costCentreCode": "ENG-PLATFORM",
+  "supplierId": "{{supplierId}}",
+  "justification": "Laptops for the two new platform engineers",
+  "neededBy": "2027-06-30",
+  "lines": [
+    { "description": "Laptop", "quantity": 5, "unitOfMeasure": "EA", "unitPrice": 2400.00 },
+    { "description": "Laptop bag", "quantity": 20, "unitOfMeasure": "EA", "unitPrice": 25.00 }
+  ]
+}
+
+### Rita reads it back, with its lines, its (still empty) route and its timeline.
+GET {{gateway}}/requisitions/{{requisitionId}}
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### Rita edits the draft, which only a draft allows; the id no longer repeats the create after this.
+PUT {{gateway}}/requisitions/{{requisitionId}}
+Authorization: Bearer {{rita.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "costCentreCode": "ENG-PLATFORM",
+  "supplierId": "{{supplierId}}",
+  "justification": "Laptops and docks for the two new platform engineers",
+  "neededBy": "2027-06-30",
+  "lines": [
+    { "description": "Laptop", "quantity": 5, "unitOfMeasure": "EA", "unitPrice": 2400.00 },
+    { "description": "Docking station", "quantity": 5, "unitOfMeasure": "EA", "unitPrice": 180.00 }
+  ]
+}
+
+### Rita lists her requisitions, newest first; pass nextCursor back as after for the next page.
+GET {{gateway}}/requisitions?limit=20
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### Rita submits it; Budgets reserves the funds and the route is fixed a moment later.
+POST {{gateway}}/requisitions/{{requisitionId}}/submit
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### Rita cannot approve her own requisition: 403.
+POST {{gateway}}/requisitions/{{requisitionId}}/approve
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### Mark's queue: what he can approve or reject right now.
+GET {{gateway}}/approvals
+Authorization: Bearer {{mark.response.body.access_token}}
+
+### Fiona's queue is empty until Mark has signed the manager step.
+GET {{gateway}}/approvals
+Authorization: Bearer {{fiona.response.body.access_token}}
+
+### Mark signs the manager step.
+POST {{gateway}}/requisitions/{{requisitionId}}/approve
+Authorization: Bearer {{mark.response.body.access_token}}
+
+### Mark cannot sign the finance step too: 403, even if he held the role.
+POST {{gateway}}/requisitions/{{requisitionId}}/approve
+Authorization: Bearer {{mark.response.body.access_token}}
+
+### Fiona signs the finance step, the last one: the requisition is approved and Purchasing drafts an order.
+POST {{gateway}}/requisitions/{{requisitionId}}/approve
+Authorization: Bearer {{fiona.response.body.access_token}}
+
+### The timeline now shows who did what, and when.
+GET {{gateway}}/requisitions/{{requisitionId}}
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### Rita drafts a second, smaller requisition, this time letting the service choose the id.
+# @name second
+POST {{gateway}}/requisitions
+Authorization: Bearer {{rita.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "costCentreCode": "ENG-PLATFORM",
+  "supplierId": "{{supplierId}}",
+  "justification": "A standing desk",
+  "neededBy": "2027-06-30",
+  "lines": [ { "description": "Standing desk", "quantity": 1, "unitOfMeasure": "EA", "unitPrice": 640.00 } ]
+}
+
+### Rita submits the second one.
+POST {{gateway}}/requisitions/{{second.response.body.id}}/submit
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### Mark rejects it, with the reason the requester will read.
+POST {{gateway}}/requisitions/{{second.response.body.id}}/reject
+Authorization: Bearer {{mark.response.body.access_token}}
+Content-Type: application/json
+
+{ "reason": "We have two unused standing desks on the third floor." }
+
+### Rita drafts a third and withdraws it; a draft never reached Budgets, so nobody else hears of it.
+# @name third
+POST {{gateway}}/requisitions
+Authorization: Bearer {{rita.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "costCentreCode": "ENG-PLATFORM",
+  "supplierId": "{{supplierId}}",
+  "justification": "Spare keyboards",
+  "neededBy": "2027-06-30",
+  "lines": [ { "description": "Keyboard", "quantity": 10, "unitOfMeasure": "EA", "unitPrice": 45.00 } ]
+}
+
+### Rita cancels the third one.
+POST {{gateway}}/requisitions/{{third.response.body.id}}/cancel
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### The service's OpenAPI document, through the gateway and without a token.
+GET http://localhost:5300/openapi/requisitions.json
