@@ -94,7 +94,7 @@ jobs:
       # A purchase from request to payment, then thirty more while the broker restarts and the two services that
       # hold money are killed; after each, the five databases must reconcile to the cent.
       - name: System tests
-        run: dotnet run --project tests/Matchbook.SystemTests --configuration Release
+        run: dotnet run --project tests/Matchbook.SystemTests
 
       - name: Service logs
         if: failure()
