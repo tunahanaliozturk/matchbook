@@ -20,7 +20,7 @@ public sealed class AmountProperties
     public Property The_amount_is_the_sum_of_the_line_amounts_each_within_half_a_cent_of_quantity_times_price() =>
         Prop.ForAll(LineLists.ToArbitrary(), static lines =>
         {
-            Requisition requisition = Requisition.Draft(1, A.Requester, A.Details(lines), A.Now);
+            Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(lines), A.Now);
 
             requisition.Amount.ShouldBe(requisition.Lines.Sum(static line => line.Amount));
             foreach (RequisitionLine line in requisition.Lines)
@@ -34,10 +34,10 @@ public sealed class AmountProperties
     public Property Editing_a_draft_to_any_lines_leaves_what_drafting_those_lines_would() =>
         Prop.ForAll(LineLists.ToArbitrary(), LineLists.ToArbitrary(), static (first, second) =>
         {
-            Requisition edited = Requisition.Draft(1, A.Requester, A.Details(first), A.Now);
+            Requisition edited = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(first), A.Now);
             edited.Edit(A.Requester, A.Details(second), A.Now);
 
-            Requisition drafted = Requisition.Draft(1, A.Requester, A.Details(second), A.Now);
+            Requisition drafted = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(second), A.Now);
 
             Snapshot(edited).ShouldBe(Snapshot(drafted));
             edited.Amount.ShouldBe(drafted.Amount);

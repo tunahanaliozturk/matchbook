@@ -10,7 +10,7 @@ public sealed class TimelineTests
     {
         DateTimeOffset reserved = A.Now.AddMinutes(1);
         DateTimeOffset issued = A.Now.AddDays(2);
-        Requisition requisition = Requisition.Draft(1, A.Requester, A.DetailsWorth(50_000m), A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.DetailsWorth(50_000m), A.Now);
         requisition.Edit(A.Requester, A.DetailsWorth(60_000m), A.Now);
         requisition.Submit(A.Requester, A.CostCentre(), A.Supplier(), A.Now);
         requisition.RecordFundsReserved(A.Manager.Id, reserved);

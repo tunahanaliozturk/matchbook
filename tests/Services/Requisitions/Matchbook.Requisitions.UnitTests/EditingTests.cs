@@ -25,7 +25,7 @@ public sealed class EditingTests
     [Fact]
     public void Dropping_lines_keeps_the_numbers_from_one()
     {
-        Requisition requisition = Requisition.Draft(
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(),
             1, A.Requester, A.Details(A.Line(description: "a"), A.Line(description: "b"), A.Line(description: "c")), A.Now);
 
         requisition.Edit(A.Requester, A.Details(A.Line(description: "c")), A.Now);
@@ -48,7 +48,7 @@ public sealed class EditingTests
     [Fact]
     public void A_refused_edit_changes_nothing()
     {
-        Requisition requisition = Requisition.Draft(1, A.Requester, A.Details(A.Line(1m, 10m), A.Line(1m, 20m)), A.Now);
+        Requisition requisition = Requisition.Draft(Guid.CreateVersion7(), 1, A.Requester, A.Details(A.Line(1m, 10m), A.Line(1m, 20m)), A.Now);
         int revision = requisition.Revision;
 
         A.Refused(

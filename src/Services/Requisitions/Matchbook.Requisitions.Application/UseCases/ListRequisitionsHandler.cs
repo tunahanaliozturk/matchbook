@@ -4,8 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matchbook.Requisitions.Application.UseCases;
 
-/// <summary>The caller's own requisitions, newest first.</summary>
-public sealed class ListMyRequisitionsHandler(IRequisitionsDb db)
+/// <summary>
+/// The requisitions the caller may read, newest first: their own, or every one for approvers and the auditor,
+/// by the same rule that decides who may read a single requisition.
+/// </summary>
+public sealed class ListRequisitionsHandler(IRequisitionsDb db)
 {
     public async Task<Page<RequisitionSummary>> HandleAsync(
         Actor actor,
@@ -16,13 +19,18 @@ public sealed class ListMyRequisitionsHandler(IRequisitionsDb db)
         ArgumentNullException.ThrowIfNull(actor);
         int take = Page.Clamp(limit);
 
-        IQueryable<Requisition> mine = db.Requisitions.AsNoTracking().Where(requisition => requisition.RequesterId == actor.Id);
-        if (after is { } cursor)
+        IQueryable<Requisition> visible = db.Requisitions.AsNoTracking();
+        if (!Requisition.SeesEveryRequisition(actor))
         {
-            mine = mine.Where(requisition => requisition.Serial < cursor);
+            visible = visible.Where(requisition => requisition.RequesterId == actor.Id);
         }
 
-        List<Keyed<RequisitionSummary>> rows = await mine
+        if (after is { } cursor)
+        {
+            visible = visible.Where(requisition => requisition.Serial < cursor);
+        }
+
+        List<Keyed<RequisitionSummary>> rows = await visible
             .OrderByDescending(static requisition => requisition.Serial)
             .Take(take + 1)
             .Select(RequisitionSummary.KeyedBySerial)
