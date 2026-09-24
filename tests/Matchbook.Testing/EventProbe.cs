@@ -21,6 +21,7 @@ public sealed class EventProbe : IAsyncDisposable
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
     private readonly ConcurrentQueue<object> _received = new();
+    private readonly ConcurrentDictionary<Guid, byte> _seen = new();
     private IBusControl _bus = null!;
 
     private EventProbe()
@@ -70,7 +71,7 @@ public sealed class EventProbe : IAsyncDisposable
         where T : class =>
         _bus.Publish(message, context => context.MessageId = messageId);
 
-    /// <summary>Every <typeparamref name="T"/> received so far.</summary>
+    /// <summary>Every <typeparamref name="T"/> received so far, once per message id.</summary>
     public IReadOnlyList<T> Received<T>() => [.. _received.OfType<T>()];
 
     /// <summary>Waits for a <typeparamref name="T"/> matching <paramref name="predicate"/>, and returns it.</summary>
@@ -135,7 +136,15 @@ public sealed class EventProbe : IAsyncDisposable
         {
             Handlers.Add(endpoint => endpoint.Handler<T>(context =>
             {
-                _probe._received.Enqueue(context.Message);
+                // The outbox delivers at least once, and a second delivery carries the same message id: seen when
+                // two copies of one incoming message were consumed at the same moment. Every real consumer's inbox
+                // drops that copy, so the probe does too. A handler that published twice would have used two ids,
+                // and both are still recorded.
+                if (context.MessageId is not { } id || _probe._seen.TryAdd(id, 0))
+                {
+                    _probe._received.Enqueue(context.Message);
+                }
+
                 return Task.CompletedTask;
             }));
 

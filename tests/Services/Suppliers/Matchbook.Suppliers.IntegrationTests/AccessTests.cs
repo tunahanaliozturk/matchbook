@@ -76,12 +76,8 @@ public sealed class AccessTests(SuppliersFixture fixture)
         (await _api.As(TestUsers.Sam).GetAsync(location)).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    // The domain would refuse these too, with supplier.role_required. A 403 without a code shows the policy
-    // refused first, so a handler never ran for someone the endpoint does not admit.
-    private static async Task StoppedAtTheDoorAsync(HttpResponseMessage response)
-    {
-        string body = await response.Content.ReadAsStringAsync();
-        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden, body);
-        body.ShouldNotContain("\"code\"");
-    }
+    // The domain would refuse these too, with supplier.role_required. The policy answers auth.forbidden instead,
+    // so that code shows the policy refused first and a handler never ran for someone the endpoint does not admit.
+    private static Task StoppedAtTheDoorAsync(HttpResponseMessage response) =>
+        response.ShouldBeProblemAsync(HttpStatusCode.Forbidden, "auth.forbidden");
 }

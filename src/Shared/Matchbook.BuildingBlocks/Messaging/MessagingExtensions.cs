@@ -17,7 +17,9 @@ public static class MessagingExtensions
     /// <b>Outbox.</b> A message published outside a consumer (from an API handler) is written to the outbox table
     /// by the same <c>SaveChangesAsync</c> that commits the change, and a background sender delivers it. A message
     /// published inside a consumer is held until the consumer finishes and committed with its changes. Either
-    /// way an event leaves if and only if its cause committed.
+    /// way an event leaves if and only if its cause committed. It leaves at least once, not exactly once: when two
+    /// copies of one incoming message are consumed at the same moment, the reply can be sent twice, always under
+    /// the same message id, and the receiving inbox drops the second.
     /// </para>
     /// <para>
     /// <b>Inbox.</b> Each consumer records the message ids it has processed, in the same transaction, and skips a
