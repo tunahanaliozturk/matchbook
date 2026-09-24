@@ -73,14 +73,22 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": [
-        "http://localhost:5301/*"
+        "http://localhost:5301/*",
+        "http://localhost:5302/*",
+        "http://localhost:5303/*",
+        "http://localhost:5304/*",
+        "http://localhost:5305/*"
       ],
       "webOrigins": [
-        "http://localhost:5301"
+        "http://localhost:5301",
+        "http://localhost:5302",
+        "http://localhost:5303",
+        "http://localhost:5304",
+        "http://localhost:5305"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5301/*"
+        "post.logout.redirect.uris": "http://localhost:5301/*##http://localhost:5302/*##http://localhost:5303/*##http://localhost:5304/*##http://localhost:5305/*"
       },
       "protocolMappers": [
         {
