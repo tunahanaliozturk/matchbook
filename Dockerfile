@@ -12,9 +12,12 @@ WORKDIR /source
 COPY global.json .editorconfig Directory.Build.props Directory.Packages.props ./
 COPY src/ src/
 
-# The package cache is a build cache mount, so the five service images restore from one shared download
-# instead of five.
-RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages \
+# The package cache is a build cache mount, so the six images restore from one shared download instead of six.
+# It is locked: compose builds the images in parallel, and on a cold cache six restores extracting the same
+# package into the same folder at once left one of them reading a half-written package. The lock makes the six
+# publishes take turns; restore and publish stay in one step because a publish in a second step, sharing the
+# cache, could not find packages its own restore had just extracted.
+RUN --mount=type=cache,id=nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet publish "${PROJECT}" --configuration Release --output /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:2d584d8147faddb0d678c5748d47953e5b8e18621ed4fb7049a91381d9d7746f AS runtime
