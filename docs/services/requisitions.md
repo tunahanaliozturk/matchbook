@@ -153,7 +153,7 @@ constraint violation instead of a concurrency conflict.
 
 The first version of `ck_requisitions_fiscal_year` said "anything past `Draft`", which refused a draft
 cancelled before submission. The integration test that cancels a draft found it; the second migration
-(`AllowCancelledDraftsWithoutFiscalYear`) corrects it rather than editing the first.
+(`CancelledDraftFiscalYear`) corrects it rather than editing the first.
 
 ## Tests
 
