@@ -23,6 +23,16 @@ export const queues: readonly Queue[] = [
         component: defineAsyncComponent(() => import("@/features/suppliers/BankAccountQueue.vue")),
     },
     {
+        key: "requisitions-to-approve",
+        roles: ["approver", "finance-approver", "cfo"],
+        component: defineAsyncComponent(() => import("@/features/approvals/ApprovalQueue.vue")),
+    },
+    {
+        key: "requisitions-to-follow-up",
+        roles: ["requester"],
+        component: defineAsyncComponent(() => import("@/features/requisitions/RequesterQueue.vue")),
+    },
+    {
         key: "supplier-drafts",
         roles: ["supplier-admin"],
         component: defineAsyncComponent(() => import("@/features/suppliers/DraftQueue.vue")),

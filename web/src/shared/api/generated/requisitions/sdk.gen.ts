@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApproveRequisitionData, ApproveRequisitionErrors, ApproveRequisitionResponses, CancelRequisitionData, CancelRequisitionErrors, CancelRequisitionResponses, CreateRequisitionData, CreateRequisitionErrors, CreateRequisitionResponses, EditRequisitionData, EditRequisitionErrors, EditRequisitionResponses, GetRequisitionData, GetRequisitionErrors, GetRequisitionResponses, ListApprovalsData, ListApprovalsErrors, ListApprovalsResponses, ListRequisitionsData, ListRequisitionsErrors, ListRequisitionsResponses, RejectRequisitionData, RejectRequisitionErrors, RejectRequisitionResponses, SubmitRequisitionData, SubmitRequisitionErrors, SubmitRequisitionResponses } from './types.gen';
-import { zApproveRequisitionPath, zApproveRequisitionResponse, zCancelRequisitionPath, zCancelRequisitionResponse, zCreateRequisitionBody, zCreateRequisitionResponse, zEditRequisitionBody, zEditRequisitionPath, zEditRequisitionResponse, zGetRequisitionPath, zGetRequisitionResponse, zListApprovalsQuery, zListApprovalsResponse, zListRequisitionsQuery, zListRequisitionsResponse, zRejectRequisitionBody, zRejectRequisitionPath, zRejectRequisitionResponse, zSubmitRequisitionPath, zSubmitRequisitionResponse } from './zod.gen';
+import type { ApproveRequisitionData, ApproveRequisitionErrors, ApproveRequisitionResponses, CancelRequisitionData, CancelRequisitionErrors, CancelRequisitionResponses, CreateRequisitionData, CreateRequisitionErrors, CreateRequisitionResponses, EditRequisitionData, EditRequisitionErrors, EditRequisitionResponses, GetRequisitionData, GetRequisitionErrors, GetRequisitionResponses, ListApprovalsData, ListApprovalsErrors, ListApprovalsResponses, ListCostCentreOptionsData, ListCostCentreOptionsErrors, ListCostCentreOptionsResponses, ListRequisitionsData, ListRequisitionsErrors, ListRequisitionsResponses, ListSupplierOptionsData, ListSupplierOptionsErrors, ListSupplierOptionsResponses, RejectRequisitionData, RejectRequisitionErrors, RejectRequisitionResponses, SubmitRequisitionData, SubmitRequisitionErrors, SubmitRequisitionResponses } from './types.gen';
+import { zApproveRequisitionPath, zApproveRequisitionResponse, zCancelRequisitionPath, zCancelRequisitionResponse, zCreateRequisitionBody, zCreateRequisitionResponse, zEditRequisitionBody, zEditRequisitionPath, zEditRequisitionResponse, zGetRequisitionPath, zGetRequisitionResponse, zListApprovalsQuery, zListApprovalsResponse, zListCostCentreOptionsResponse, zListRequisitionsQuery, zListRequisitionsResponse, zListSupplierOptionsResponse, zRejectRequisitionBody, zRejectRequisitionPath, zRejectRequisitionResponse, zSubmitRequisitionPath, zSubmitRequisitionResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -74,6 +74,40 @@ export const createRequisition = <ThrowOnError extends boolean = true>(options: 
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * The cost centres the caller may raise a requisition against.
+ *
+ * Role: requester. The active ones the caller does not manage, as this service last heard of them, in code order; at most 200.
+ */
+export const listCostCentreOptions = <ThrowOnError extends boolean = true>(options?: Options<ListCostCentreOptionsData, ThrowOnError>): RequestResult<ListCostCentreOptionsResponses, ListCostCentreOptionsErrors, ThrowOnError> => (options?.client ?? client).get<ListCostCentreOptionsResponses, ListCostCentreOptionsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListCostCentreOptionsResponse.parseAsync(data),
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/requisitions/cost-centres',
+    ...options
+});
+
+/**
+ * The suppliers a requisition may be raised against.
+ *
+ * Roles: requester, approver, finance-approver, cfo, auditor. The active ones, as this service last heard of them, in name order; at most 200.
+ */
+export const listSupplierOptions = <ThrowOnError extends boolean = true>(options?: Options<ListSupplierOptionsData, ThrowOnError>): RequestResult<ListSupplierOptionsResponses, ListSupplierOptionsErrors, ThrowOnError> => (options?.client ?? client).get<ListSupplierOptionsResponses, ListSupplierOptionsErrors, ThrowOnError>({
+    requestValidator: async (data) => await z.object({
+        body: z.never().optional(),
+        path: z.never().optional(),
+        query: z.never().optional()
+    }).parseAsync(data),
+    responseValidator: async (data) => await zListSupplierOptionsResponse.parseAsync(data),
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/requisitions/suppliers',
+    ...options
 });
 
 /**
