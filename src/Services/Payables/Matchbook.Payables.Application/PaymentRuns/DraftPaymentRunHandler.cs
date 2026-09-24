@@ -7,12 +7,29 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Matchbook.Payables.Application.PaymentRuns;
 
+/// <param name="Id">Optional, chosen by the client so a retry returns the run instead of drafting a second one.</param>
+public sealed record DraftPaymentRun(Guid? Id, DateOnly ExecutionDate);
+
 /// <summary>A treasurer drafts a payment run for an execution date: every payable invoice due by then that can be paid.</summary>
 public sealed class DraftPaymentRunHandler(IPayablesDb db, TimeProvider time)
 {
-    public async Task<PaymentRunView> HandleAsync(DateOnly executionDate, Actor treasurer, CancellationToken cancellationToken)
+    public async Task<PaymentRunView> HandleAsync(DraftPaymentRun command, Actor treasurer, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(command);
+
+        if (command.Id is { } requestedId
+            && await db.PaymentRuns.AsNoTracking().SingleOrDefaultAsync(run => run.Id == requestedId, cancellationToken) is { } earlier)
+        {
+            return earlier.ExecutionDate == command.ExecutionDate
+                ? PaymentRunView.From(earlier)
+                : throw new BusinessRuleException(
+                    "request.id_reused",
+                    "A payment run with this id was already drafted for another date.",
+                    ViolationKind.Conflict);
+        }
+
         DateTimeOffset now = time.GetUtcNow();
+        DateOnly executionDate = command.ExecutionDate;
 
         // The query narrows the field cheaply; the domain applies the rule.
         List<PaymentCandidate> candidates = await db.Invoices
@@ -36,7 +53,7 @@ public sealed class DraftPaymentRunHandler(IPayablesDb db, TimeProvider time)
             .Where(supplier => supplierIds.Contains(supplier.Id))
             .ToDictionaryAsync(supplier => supplier.Id, cancellationToken);
 
-        PaymentRunDraft draft = PaymentRun.Draft(Guid.CreateVersion7(now), executionDate, treasurer, candidates, suppliers, now);
+        PaymentRunDraft draft = PaymentRun.Draft(command.Id ?? Guid.CreateVersion7(now), executionDate, treasurer, candidates, suppliers, now);
         Guid runId = draft.Run.Id;
 
         await using IDbContextTransaction transaction = await db.BeginTransactionAsync(cancellationToken);

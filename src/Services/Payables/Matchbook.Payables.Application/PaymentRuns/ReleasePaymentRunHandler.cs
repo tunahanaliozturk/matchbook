@@ -11,7 +11,7 @@ namespace Matchbook.Payables.Application.PaymentRuns;
 /// A second treasurer releases a draft run: suppliers that can no longer be paid are dropped, everything else is
 /// marked paid, and <see cref="InvoicePaid"/> goes out for each invoice paid, all in one transaction.
 /// </summary>
-public sealed class ReleasePaymentRunHandler(IPayablesDb db, IEventPublisher publisher, TimeProvider time)
+public sealed class ReleasePaymentRunHandler(IPayablesDb db, IEventPublisher publisher, PayablesMetrics metrics, TimeProvider time)
 {
     public async Task<PaymentRunView> HandleAsync(Guid paymentRunId, Actor treasurer, CancellationToken cancellationToken)
     {
@@ -61,6 +61,8 @@ public sealed class ReleasePaymentRunHandler(IPayablesDb db, IEventPublisher pub
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        metrics.Paid(paid.Count);
         return PaymentRunView.From(run);
     }
 }
