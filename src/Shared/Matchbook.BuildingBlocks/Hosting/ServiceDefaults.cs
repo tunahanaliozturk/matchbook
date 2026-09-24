@@ -4,6 +4,7 @@ using MassTransit.Monitoring;
 using Matchbook.BuildingBlocks.Http;
 using Matchbook.BuildingBlocks.Persistence;
 using Matchbook.BuildingBlocks.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
@@ -34,6 +35,7 @@ public static class ServiceDefaults
         builder.Services.AddMatchbookAuthentication(builder.Configuration);
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<ProblemMapping>();
+        builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ProblemAuthorizationResults>();
         builder.Services.AddHealthChecks();
         builder.Services.AddOpenApi();
         builder.Services.Configure<JsonOptions>(static options =>

@@ -54,7 +54,7 @@ public sealed class PlumbingTests(PlumbingFixture fixture) : IClassFixture<Plumb
 
     [Fact]
     public async Task A_request_without_a_token_is_refused() =>
-        (await Client().GetAsync(new Uri("/me", UriKind.Relative))).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        await (await Client().GetAsync(new Uri("/me", UriKind.Relative))).ShouldBeProblemAsync(HttpStatusCode.Unauthorized, "auth.unauthenticated");
 
     [Fact]
     public async Task A_token_for_another_audience_is_refused()
@@ -79,7 +79,7 @@ public sealed class PlumbingTests(PlumbingFixture fixture) : IClassFixture<Plumb
     public async Task A_role_policy_admits_the_role_and_nobody_else()
     {
         (await Client(TestUsers.Bob).GetAsync(new Uri("/budgets", UriKind.Relative))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await Client(TestUsers.Rita).GetAsync(new Uri("/budgets", UriKind.Relative))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        await (await Client(TestUsers.Rita).GetAsync(new Uri("/budgets", UriKind.Relative))).ShouldBeProblemAsync(HttpStatusCode.Forbidden, "auth.forbidden");
     }
 
     [Theory]
