@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "jsx": "preserve",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    // Off, against the house standard: the generated API client passes `undefined` to optional properties in a
+    // dozen places and is compiled with the rest of src, so the flag would fail on code this repo does not write.
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    // The generated clients import the runtime config by its .ts path; Vite resolves it, and nothing is emitted.
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "useDefineForClassFields": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "openapi-ts.config.ts"
+  ]
+}

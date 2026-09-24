@@ -1,0 +1,157 @@
+/*
+  The console's whole visual vocabulary, as custom properties. Components read these and nothing else, so a
+  colour or a size changes here once. The values follow the macOS system palette and type ramp: a grey window, white
+  content, one blue for action, and colour otherwise only where it carries meaning (a status, a slice of a budget).
+*/
+:root {
+    color-scheme: light dark;
+
+    /* Surfaces */
+    --window: #f5f5f7;
+    --content: #ffffff;
+    --sidebar: rgb(236 236 240 / 72%);
+    --sidebar-solid: #ececf0;
+    --grouped: #ffffff;
+    --control: #ffffff;
+    --control-hover: #f2f2f4;
+    --hover: rgb(0 0 0 / 4%);
+    --pressed: rgb(0 0 0 / 8%);
+    --scrim: rgb(0 0 0 / 28%);
+
+    /* Text */
+    --label: #1d1d1f;
+    --label-secondary: #636366;
+    --label-tertiary: #86868b;
+    --label-on-accent: #ffffff;
+
+    /* Lines */
+    --separator: rgb(60 60 67 / 18%);
+    --separator-strong: rgb(60 60 67 / 29%);
+    --field-border: rgb(60 60 67 / 26%);
+
+    /* Action */
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --accent-pressed: #006edb;
+    --accent-text: #0066cc;
+    --accent-soft: rgb(0 113 227 / 12%);
+    --focus-ring: rgb(0 113 227 / 50%);
+    --destructive: #d70015;
+
+    /* Meaning. Text colours are the darker variant of each system colour, so they hold 4.5:1 on their tint. */
+    --positive: #1b7a36;
+    --positive-tint: rgb(52 199 89 / 14%);
+    --caution: #a04700;
+    --caution-tint: rgb(255 149 0 / 16%);
+    --negative: #c0000f;
+    --negative-tint: rgb(255 59 48 / 12%);
+    --neutral: #636366;
+    --neutral-tint: rgb(120 120 128 / 12%);
+    --progress: #0066cc;
+    --progress-tint: rgb(0 113 227 / 12%);
+
+    /* The ledger capsule: what a budget has spent, promised and set aside, against what is left. */
+    --ledger-actual: #0071e3;
+    --ledger-committed: #5e5ce6;
+    --ledger-reserved: #ff9f0a;
+    --ledger-over: #ff3b30;
+    --ledger-track: rgb(120 120 128 / 16%);
+
+    /* Type. The system face, which is San Francisco on Apple platforms and Segoe UI Variable on Windows. */
+    --font:
+        -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI",
+        system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-display:
+        -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display",
+        "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* San Francisco tightens as it grows and opens as it shrinks; the tracking follows its optical sizes. */
+    --text-large-title: 700 1.75rem/2.125rem var(--font-display);
+    --tracking-large-title: -0.021em;
+    --text-title: 600 1.25rem/1.625rem var(--font-display);
+    --tracking-title: -0.017em;
+    --text-headline: 600 0.875rem/1.25rem var(--font);
+    --text-body: 400 0.875rem/1.25rem var(--font);
+    --tracking-body: -0.006em;
+    --text-callout: 400 0.8125rem/1.125rem var(--font);
+    --text-caption: 400 0.75rem/1rem var(--font);
+    --tracking-caption: 0.002em;
+    --text-figure: 600 1.375rem/1.75rem var(--font-display);
+
+    /* Space, on a 4px grid. */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+
+    /* Shape. Controls are small and tight, groups softer, sheets softest: the radius grows with the surface. */
+    --radius-control: 6px;
+    --radius-group: 10px;
+    --radius-sheet: 12px;
+    --radius-capsule: 999px;
+
+    --sidebar-width: 15rem;
+    --content-max: 68rem;
+    --control-height: 1.75rem;
+
+    --shadow-sheet: 0 22px 70px rgb(0 0 0 / 22%), 0 0 0 0.5px rgb(0 0 0 / 12%);
+    --shadow-control: 0 0.5px 1px rgb(0 0 0 / 12%);
+
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --duration: 180ms;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --window: #1e1e1e;
+        --content: #1e1e1e;
+        --sidebar: rgb(44 44 46 / 72%);
+        --sidebar-solid: #2c2c2e;
+        --grouped: #2c2c2e;
+        --control: #3a3a3c;
+        --control-hover: #48484a;
+        --hover: rgb(255 255 255 / 6%);
+        --pressed: rgb(255 255 255 / 10%);
+        --scrim: rgb(0 0 0 / 48%);
+
+        --label: #f5f5f7;
+        --label-secondary: #a1a1a6;
+        --label-tertiary: #8e8e93;
+
+        --separator: rgb(84 84 88 / 60%);
+        --separator-strong: rgb(84 84 88 / 90%);
+        --field-border: rgb(255 255 255 / 18%);
+
+        --accent: #0a6fdb; /* system blue is 3.6:1 under white text; this keeps 4.8:1 */
+        --accent-hover: #1a7ae6;
+        --accent-pressed: #0a64c8;
+        --accent-text: #409cff;
+        --accent-soft: rgb(10 132 255 / 18%);
+        --focus-ring: rgb(10 132 255 / 60%);
+        --destructive: #ff453a;
+
+        --positive: #30d158;
+        --positive-tint: rgb(48 209 88 / 16%);
+        --caution: #ffb340;
+        --caution-tint: rgb(255 159 10 / 18%);
+        --negative: #ff6961;
+        --negative-tint: rgb(255 69 58 / 18%);
+        --neutral: #a1a1a6;
+        --neutral-tint: rgb(142 142 147 / 18%);
+        --progress: #409cff;
+        --progress-tint: rgb(10 132 255 / 18%);
+
+        --ledger-actual: #0a84ff;
+        --ledger-committed: #7d7aff;
+        --ledger-reserved: #ffb340;
+        --ledger-over: #ff453a;
+        --ledger-track: rgb(142 142 147 / 24%);
+
+        --shadow-sheet: 0 22px 70px rgb(0 0 0 / 55%), 0 0 0 0.5px rgb(255 255 255 / 12%);
+        --shadow-control: none;
+    }
+}
