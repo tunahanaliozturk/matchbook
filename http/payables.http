@@ -1,0 +1,113 @@
+# Payables through the gateway, in the order a reader would try it. Start the stack with `docker compose up`.
+# Invoices bill orders that Purchasing issued to suppliers that Suppliers activated; set the two ids below to an
+# active supplier and an order issued to it, from those services.
+
+@gateway = http://localhost:5300/api
+@supplierId = 00000000-0000-0000-0000-000000000000
+@purchaseOrderId = 00000000-0000-0000-0000-000000000000
+
+### A token for alice, the AP clerk who captures invoices
+# @name alice
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=alice&password=matchbook
+
+### A token for aaron, the AP approver who clears exceptions
+# @name aaron
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=aaron&password=matchbook
+
+### A token for tess, the treasurer who drafts payment runs
+# @name tess
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=tess&password=matchbook
+
+### A token for trevor, the second treasurer who releases them
+# @name trevor
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=trevor&password=matchbook
+
+### Capture an invoice; it is matched at once against the order and what was received (id makes a retry safe)
+# @name capture
+POST {{gateway}}/invoices
+Authorization: Bearer {{alice.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "id": "01920000-0000-7000-8000-000000000001",
+  "supplierId": "{{supplierId}}",
+  "supplierInvoiceNumber": "INV-2026-0042",
+  "invoiceDate": "2026-09-01",
+  "purchaseOrderId": "{{purchaseOrderId}}",
+  "lines": [{ "lineNumber": 1, "quantity": 10, "unitPrice": 12.50 }],
+  "total": 125.00
+}
+
+### Read the invoice, with the reason it is in its state
+GET {{gateway}}/invoices/{{capture.response.body.id}}
+Authorization: Bearer {{alice.response.body.access_token}}
+
+### List invoices, newest first; pass the returned "next" as after= for the following page
+GET {{gateway}}/invoices?limit=20
+Authorization: Bearer {{alice.response.body.access_token}}
+
+### List only the invoices waiting for goods
+GET {{gateway}}/invoices?status=AwaitingReceipt&limit=20
+Authorization: Bearer {{alice.response.body.access_token}}
+
+### The approvers' queue: suspected duplicates and price variances, oldest first
+GET {{gateway}}/invoices/exceptions?limit=20
+Authorization: Bearer {{aaron.response.body.access_token}}
+
+### Accept a price variance on an invoice someone else captured
+POST {{gateway}}/invoices/{{capture.response.body.id}}/accept-price-variance
+Authorization: Bearer {{aaron.response.body.access_token}}
+Content-Type: application/json
+
+{ "reason": "Freight surcharge agreed with the buyer." }
+
+### Confirm an invoice held as a suspected duplicate is genuine
+POST {{gateway}}/invoices/{{capture.response.body.id}}/clear-suspected-duplicate
+Authorization: Bearer {{aaron.response.body.access_token}}
+
+### Draft a payment run of every payable invoice due by today
+# @name draft
+POST {{gateway}}/payment-runs
+Authorization: Bearer {{tess.response.body.access_token}}
+Content-Type: application/json
+
+{ "executionDate": "{{$datetime 'yyyy-MM-dd'}}" }
+
+### Read the run, per supplier, with account numbers masked
+GET {{gateway}}/payment-runs/{{draft.response.body.id}}
+Authorization: Bearer {{tess.response.body.access_token}}
+
+### Release it as the other treasurer (tess, who drafted it, would get payment_run.same_treasurer)
+POST {{gateway}}/payment-runs/{{draft.response.body.id}}/release
+Authorization: Bearer {{trevor.response.body.access_token}}
+
+### Download the ISO 20022 pain.001.001.09 file for the bank
+GET {{gateway}}/payment-runs/{{draft.response.body.id}}/file
+Authorization: Bearer {{tess.response.body.access_token}}
+
+### Draft another run to show cancelling (it needs something payable left to take)
+# @name another
+POST {{gateway}}/payment-runs
+Authorization: Bearer {{tess.response.body.access_token}}
+Content-Type: application/json
+
+{ "executionDate": "{{$datetime 'yyyy-MM-dd'}}" }
+
+### Cancel a draft; its invoices become payable again
+POST {{gateway}}/payment-runs/{{another.response.body.id}}/cancel
+Authorization: Bearer {{tess.response.body.access_token}}
+
+### The OpenAPI description of all of the above
+GET http://localhost:5300/openapi/payables.json
