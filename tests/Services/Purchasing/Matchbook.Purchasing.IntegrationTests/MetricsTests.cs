@@ -39,12 +39,12 @@ public sealed class MetricsTests(PurchasingFixture fixture) : IClassFixture<Purc
         (await fixture.ClientFor(TestUsers.Bruno).PostAsync(Routes.ShortClose(draft.Id), null)).StatusCode.ShouldBe(HttpStatusCode.OK);
 
         listener.RecordObservableInstruments();
-        measured.ShouldContain(static m => m.Instrument == "purchasing.orders.drafted" && m.Value == 1);
-        measured.ShouldContain(static m => m.Instrument == "purchasing.commitments.rejected" && m.Reason == FundsRejectionReason.InsufficientFunds);
-        measured.ShouldContain(static m => m.Instrument == "purchasing.orders.issued" && m.Value == 1);
-        measured.ShouldContain(static m => m.Instrument == "purchasing.orders.time_to_issue" && m.Value > 0);
-        measured.ShouldContain(static m => m.Instrument == "purchasing.receipts.recorded" && m.Value == 1);
-        measured.ShouldContain(static m => m.Instrument == "purchasing.orders.closed" && m.Reason == PurchaseOrderCloseReason.ShortClosed);
+        measured.ShouldContain(static m => m.Instrument == "matchbook.purchasing.orders.drafted" && m.Value == 1);
+        measured.ShouldContain(static m => m.Instrument == "matchbook.purchasing.commitments.rejected" && m.Reason == FundsRejectionReason.InsufficientFunds);
+        measured.ShouldContain(static m => m.Instrument == "matchbook.purchasing.orders.issued" && m.Value == 1);
+        measured.ShouldContain(static m => m.Instrument == "matchbook.purchasing.orders.time_to_issue" && m.Value > 0);
+        measured.ShouldContain(static m => m.Instrument == "matchbook.purchasing.receipts.recorded" && m.Value == 1);
+        measured.ShouldContain(static m => m.Instrument == "matchbook.purchasing.orders.closed" && m.Reason == PurchaseOrderCloseReason.ShortClosed);
     }
 
     private static string? Reason(ReadOnlySpan<KeyValuePair<string, object?>> tags)

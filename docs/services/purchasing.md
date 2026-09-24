@@ -219,12 +219,12 @@ On the `Matchbook.Purchasing` meter, recorded after the change they count was sa
 
 | Instrument | Kind | Tags | Read it as |
 |---|---|---|---|
-| `purchasing.orders.drafted` | counter | | approvals turned into drafts |
-| `purchasing.orders.issued` | counter | | orders Budgets committed |
-| `purchasing.commitments.rejected` | counter | `reason` | refusals from Budgets; a rise in `insufficient_funds` is a budget problem, not a Purchasing one |
-| `purchasing.receipts.recorded` | counter | | deliveries recorded |
-| `purchasing.orders.closed` | counter | `reason` (`Completed`, `ShortClosed`, `Cancelled`) | how orders end; many short-closes point at suppliers who under-deliver |
-| `purchasing.orders.time_to_issue` | histogram, seconds | | from draft to issue: how long approved requisitions wait for a buyer |
+| `matchbook.purchasing.orders.drafted` | counter | | approvals turned into drafts |
+| `matchbook.purchasing.orders.issued` | counter | | orders Budgets committed |
+| `matchbook.purchasing.commitments.rejected` | counter | `reason` | refusals from Budgets; a rise in `insufficient_funds` is a budget problem, not a Purchasing one |
+| `matchbook.purchasing.receipts.recorded` | counter | | deliveries recorded |
+| `matchbook.purchasing.orders.closed` | counter | `reason` (`Completed`, `ShortClosed`, `Cancelled`) | how orders end; many short-closes point at suppliers who under-deliver |
+| `matchbook.purchasing.orders.time_to_issue` | histogram, seconds | | from draft to issue: how long approved requisitions wait for a buyer |
 
 `MetricsTests` drives one order through a refusal, an issue, a receipt and a short-close and checks each
 instrument saw it.

@@ -205,11 +205,11 @@ On the meter `Matchbook.Payables`:
 
 | Instrument | Unit | Tags |
 |---|---|---|
-| `payables.invoices.captured` | invoices | |
-| `payables.match.evaluations` | invoices | `status` the invoice moved to, `reason` |
-| `payables.match.rematches` | invoices | `trigger`: `order_issued`, `goods_received`, `order_closed` |
-| `payables.invoices.paid` | invoices | |
-| `payables.payment_file.duration` | seconds, histogram | `size`: `le_100`, `le_1000`, `le_10000`, `gt_10000` |
+| `matchbook.payables.invoices.captured` | invoices | |
+| `matchbook.payables.match.evaluations` | invoices | `status` the invoice moved to, `reason` |
+| `matchbook.payables.match.rematches` | invoices | `trigger`: `order_issued`, `goods_received`, `order_closed` |
+| `matchbook.payables.invoices.paid` | invoices | |
+| `matchbook.payables.payment_file.duration` | seconds, histogram | `size`: `le_100`, `le_1000`, `le_10000`, `gt_10000` |
 
 Tags are enum and trigger names only, so the number of series does not grow with the number of invoices.
 

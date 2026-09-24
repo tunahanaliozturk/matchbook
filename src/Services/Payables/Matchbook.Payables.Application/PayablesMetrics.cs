@@ -22,18 +22,18 @@ public sealed class PayablesMetrics
         ArgumentNullException.ThrowIfNull(meters);
 
         Meter meter = meters.Create(MeterName);
-        _captured = meter.CreateCounter<long>("payables.invoices.captured", "{invoice}", "Invoices captured.");
+        _captured = meter.CreateCounter<long>("matchbook.payables.invoices.captured", "{invoice}", "Invoices captured.");
         _evaluated = meter.CreateCounter<long>(
-            "payables.match.evaluations",
+            "matchbook.payables.match.evaluations",
             "{invoice}",
             "Three-way match results, by the state the invoice moved to and why.");
         _rematched = meter.CreateCounter<long>(
-            "payables.match.rematches",
+            "matchbook.payables.match.rematches",
             "{invoice}",
             "Waiting invoices matched again because an order, a receipt or a closure arrived after them.");
-        _paid = meter.CreateCounter<long>("payables.invoices.paid", "{invoice}", "Invoices paid by released payment runs.");
+        _paid = meter.CreateCounter<long>("matchbook.payables.invoices.paid", "{invoice}", "Invoices paid by released payment runs.");
         _fileSeconds = meter.CreateHistogram<double>(
-            "payables.payment_file.duration",
+            "matchbook.payables.payment_file.duration",
             "s",
             "Time to write a pain.001 file, from the first byte to the last.");
     }

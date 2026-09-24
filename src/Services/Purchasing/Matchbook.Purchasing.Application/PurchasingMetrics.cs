@@ -26,14 +26,14 @@ public sealed class PurchasingMetrics : IDisposable
 
     public PurchasingMetrics()
     {
-        _drafted = _meter.CreateCounter<long>("purchasing.orders.drafted", "{order}", "Orders drafted from approved requisitions.");
-        _issued = _meter.CreateCounter<long>("purchasing.orders.issued", "{order}", "Orders issued after Budgets committed the funds.");
+        _drafted = _meter.CreateCounter<long>("matchbook.purchasing.orders.drafted", "{order}", "Orders drafted from approved requisitions.");
+        _issued = _meter.CreateCounter<long>("matchbook.purchasing.orders.issued", "{order}", "Orders issued after Budgets committed the funds.");
         _commitmentsRejected = _meter.CreateCounter<long>(
-            "purchasing.commitments.rejected", "{request}", "Commitment requests Budgets refused, by reason.");
-        _receipts = _meter.CreateCounter<long>("purchasing.receipts.recorded", "{receipt}", "Goods receipts recorded.");
-        _closed = _meter.CreateCounter<long>("purchasing.orders.closed", "{order}", "Orders closed, by reason.");
+            "matchbook.purchasing.commitments.rejected", "{request}", "Commitment requests Budgets refused, by reason.");
+        _receipts = _meter.CreateCounter<long>("matchbook.purchasing.receipts.recorded", "{receipt}", "Goods receipts recorded.");
+        _closed = _meter.CreateCounter<long>("matchbook.purchasing.orders.closed", "{order}", "Orders closed, by reason.");
         _timeToIssue = _meter.CreateHistogram<double>(
-            "purchasing.orders.time_to_issue",
+            "matchbook.purchasing.orders.time_to_issue",
             "s",
             "From the draft, made when the requisition's approval is consumed, to the order being issued.",
             advice: new InstrumentAdvice<double>
