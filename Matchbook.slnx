@@ -4,6 +4,7 @@
     <Project Path="src/Shared/Matchbook.Contracts/Matchbook.Contracts.csproj" />
     <Project Path="src/Shared/Matchbook.BuildingBlocks/Matchbook.BuildingBlocks.csproj" />
   </Folder>
+  <Folder Name="/src/" />
   <Folder Name="/src/Gateway/">
     <Project Path="src/Gateway/Matchbook.Gateway/Matchbook.Gateway.csproj" />
   </Folder>
@@ -13,6 +14,7 @@
     <Project Path="src/Services/Suppliers/Matchbook.Suppliers.Infrastructure/Matchbook.Suppliers.Infrastructure.csproj" />
     <Project Path="src/Services/Suppliers/Matchbook.Suppliers.Api/Matchbook.Suppliers.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Budgets/">
     <Project Path="src/Services/Budgets/Matchbook.Budgets.Domain/Matchbook.Budgets.Domain.csproj" />
     <Project Path="src/Services/Budgets/Matchbook.Budgets.Application/Matchbook.Budgets.Application.csproj" />
@@ -38,6 +40,7 @@
     <Project Path="src/Services/Payables/Matchbook.Payables.Api/Matchbook.Payables.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Matchbook.SystemTests/Matchbook.SystemTests.csproj" />
     <Project Path="tests/Matchbook.Testing/Matchbook.Testing.csproj" />
     <Project Path="tests/Matchbook.Stack/Matchbook.Stack.csproj" />
     <Project Path="tests/Matchbook.ArchitectureTests/Matchbook.ArchitectureTests.csproj" />
@@ -47,6 +50,7 @@
     <Project Path="tests/Services/Suppliers/Matchbook.Suppliers.UnitTests/Matchbook.Suppliers.UnitTests.csproj" />
     <Project Path="tests/Services/Suppliers/Matchbook.Suppliers.IntegrationTests/Matchbook.Suppliers.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/tests/Services/" />
   <Folder Name="/tests/Services/Budgets/">
     <Project Path="tests/Services/Budgets/Matchbook.Budgets.UnitTests/Matchbook.Budgets.UnitTests.csproj" />
     <Project Path="tests/Services/Budgets/Matchbook.Budgets.IntegrationTests/Matchbook.Budgets.IntegrationTests.csproj" />

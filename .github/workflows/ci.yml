@@ -76,3 +76,26 @@ jobs:
       # constraints and concurrency, and an in-memory substitute would prove none of them.
       - name: Integration tests
         run: dotnet run --project ${{ matrix.suite }} --configuration Release
+
+  system:
+    name: system (compose stack, chaos, reconciliation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # The README quick start, exactly as a reader runs it. If this breaks, the quick start is broken.
+      - name: Start the stack
+        run: docker compose up -d --build --wait
+
+      # A purchase from request to payment, then thirty more while the broker restarts and the two services that
+      # hold money are killed; after each, the five databases must reconcile to the cent.
+      - name: System tests
+        run: dotnet run --project tests/Matchbook.SystemTests --configuration Release
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --no-color --timestamps
