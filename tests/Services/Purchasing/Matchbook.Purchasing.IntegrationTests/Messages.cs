@@ -11,8 +11,9 @@ namespace Matchbook.Purchasing.IntegrationTests;
 /// <summary>The events the other services would send, shaped the way they send them.</summary>
 internal static class Messages
 {
-    public static SupplierChanged Supplier(Guid supplierId, long version, string status) =>
-        new(supplierId, version, "Acme Office Supplies GmbH", "DE", status, 30, null, DateTimeOffset.UtcNow);
+    public static SupplierChanged Supplier(
+        Guid supplierId, long version, string status, string legalName = "Acme Office Supplies GmbH") =>
+        new(supplierId, version, legalName, "DE", status, 30, null, DateTimeOffset.UtcNow);
 
     public static RequisitionApproved Approval(Guid supplierId, params (decimal Quantity, decimal UnitPrice)[] lines)
     {

@@ -47,7 +47,7 @@
     --negative-tint: rgb(255 59 48 / 12%);
     --neutral: #636366;
     --neutral-tint: rgb(120 120 128 / 12%);
-    --progress: #0066cc;
+    --progress: #005ec0; /* #0066cc is 4.4:1 on its own tint over the window; this keeps 4.9:1 */
     --progress-tint: rgb(0 113 227 / 12%);
 
     /* The ledger capsule: what a budget has spent, promised and set aside, against what is left. */
@@ -132,7 +132,7 @@
         --accent-text: #409cff;
         --accent-soft: rgb(10 132 255 / 18%);
         --focus-ring: rgb(10 132 255 / 60%);
-        --destructive: #ff453a;
+        --destructive: #ff8178; /* system red is 3.3:1 on a dark push button; this keeps 4.7:1 */
 
         --positive: #30d158;
         --positive-tint: rgb(48 209 88 / 16%);

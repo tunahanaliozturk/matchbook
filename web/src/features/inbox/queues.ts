@@ -32,4 +32,16 @@ export const queues: readonly Queue[] = [
         roles: ["budget-admin"],
         component: defineAsyncComponent(() => import("@/features/budgets/OverspendQueue.vue")),
     },
+    {
+        key: "orders-to-issue",
+        roles: ["buyer"],
+        component: defineAsyncComponent(() => import("@/features/purchase-orders/IssueQueue.vue")),
+    },
+    {
+        key: "orders-waiting-for-goods",
+        roles: ["receiver"],
+        component: defineAsyncComponent(
+            () => import("@/features/purchase-orders/ReceiveQueue.vue"),
+        ),
+    },
 ];

@@ -59,6 +59,7 @@ export type PurchaseOrderSummary = {
     number: string;
     status: PurchaseOrderStatus;
     supplierId: string;
+    supplierName: null | string;
     costCentreCode: string;
     amount: number;
     draftedAt: string;
@@ -70,6 +71,7 @@ export type PurchaseOrderView = {
     status: PurchaseOrderStatus;
     requisitionId: string;
     supplierId: string;
+    supplierName: null | string;
     costCentreCode: string;
     fiscalYear: number;
     amount: number;
