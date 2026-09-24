@@ -100,8 +100,18 @@ public static class ServiceHost
 
         var host = new ServiceHost<TEntryPoint>(all) { Broker = broker, Database = database };
 
-        // Building the server runs StartingAsync, so migrations are applied and the bus is up on return.
+        // Building the server runs StartingAsync, so migrations are applied on return. The bus is only starting:
+        // until each receive endpoint has declared its queue and bindings, an event a test publishes to it is dropped
+        // by the broker for want of a binding, and the test times out waiting for it. Readiness covers the bus.
         _ = host.Server;
+        using HttpClient client = host.CreateClient();
+        await Eventually.MatchesAsync(() => ReadyAsync(client), static ready => ready);
         return host;
+    }
+
+    private static async Task<bool> ReadyAsync(HttpClient client)
+    {
+        using HttpResponseMessage response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative));
+        return response.IsSuccessStatusCode;
     }
 }
