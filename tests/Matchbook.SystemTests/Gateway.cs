@@ -13,13 +13,14 @@ namespace Matchbook.SystemTests;
 /// patience a real client has while a container restarts behind it. Nothing here knows a service's types; the
 /// answers are read as JSON, the way a client written in any language would read them.
 /// </summary>
-internal sealed class Gateway(StackOptions options, HttpClient http)
+internal sealed class Gateway(StackOptions options, HttpClient http) : IDisposable
 {
     // Long enough to outlast a killed service coming back and running its migrations check, short enough that a
     // service which never comes back fails the test rather than hanging it.
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(90);
 
     private readonly ConcurrentDictionary<string, (string Token, DateTimeOffset Expires)> tokens = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim signIn = new(1, 1);
 
     public Task<JsonElement> GetAsync(Actor actor, string path) => SendAsync(actor, HttpMethod.Get, path, body: null);
 
@@ -114,6 +115,8 @@ internal sealed class Gateway(StackOptions options, HttpClient http)
         }
     }
 
+    public void Dispose() => signIn.Dispose();
+
     private static async Task ThrowIfRefusedAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
@@ -140,6 +143,24 @@ internal sealed class Gateway(StackOptions options, HttpClient http)
             return cached.Token;
         }
 
+        // One sign-in at a time. The realm has brute force protection, which counts logins by one user less than a
+        // second apart as an attack and locks the account, so thirty purchases must not all sign bruno in at once.
+        await signIn.WaitAsync();
+
+        try
+        {
+            return tokens.TryGetValue(actor.Name, out cached) && cached.Expires > DateTimeOffset.UtcNow.AddMinutes(1)
+                ? cached.Token
+                : await SignInAsync(actor);
+        }
+        finally
+        {
+            signIn.Release();
+        }
+    }
+
+    private async Task<string> SignInAsync(Actor actor)
+    {
         using var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["grant_type"] = "password",
@@ -149,7 +170,12 @@ internal sealed class Gateway(StackOptions options, HttpClient http)
         });
 
         using HttpResponseMessage response = await http.PostAsync(new Uri(options.Keycloak, "protocol/openid-connect/token"), form);
-        response.EnsureSuccessStatusCode();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Keycloak refused to sign {actor.Name} in: {(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
+        }
+
         JsonElement answer = await response.Content.ReadFromJsonAsync<JsonElement>();
 
         string token = answer.GetProperty("access_token").GetString()!;

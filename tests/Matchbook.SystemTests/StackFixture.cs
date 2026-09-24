@@ -49,6 +49,7 @@ public sealed class StackFixture : IAsyncLifetime
 
     public ValueTask DisposeAsync()
     {
+        Gateway.Dispose();
         http.Dispose();
         return ValueTask.CompletedTask;
     }
