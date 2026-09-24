@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import { roleNames } from "@/auth/roles";
 import { signOut, useSession } from "@/auth/session";
@@ -13,12 +13,17 @@ import { sections } from "./navigation";
 // The window: a source list on the left with only the places this person's roles open, and the page on the right.
 // The list is the one translucent surface, so the content always reads as the thing in front.
 const { person, hasAny } = useSession();
+const router = useRouter();
 
+// A destination whose feature has no page yet is left out rather than linked, since resolving a link to a route
+// that does not exist throws and takes the whole window down with it.
 const visible = computed(() =>
     sections
         .map((section) => ({
             ...section,
-            destinations: section.destinations.filter((destination) => hasAny(destination.roles)),
+            destinations: section.destinations.filter(
+                (destination) => hasAny(destination.roles) && router.hasRoute(destination.route),
+            ),
         }))
         .filter((section) => section.destinations.length > 0),
 );
