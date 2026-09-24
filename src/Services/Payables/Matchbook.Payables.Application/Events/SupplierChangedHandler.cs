@@ -1,12 +1,13 @@
 using Matchbook.Contracts.Suppliers;
 using Matchbook.Payables.Domain;
 using Matchbook.Payables.Domain.Suppliers;
+using Matchbook.SharedKernel;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matchbook.Payables.Application.Events;
 
 /// <summary>Keeps the local copy of a supplier, applying a snapshot only when it is newer than the one held.</summary>
-public sealed class SupplierChangedHandler(IPayablesDb db)
+public sealed class SupplierChangedHandler(IPayablesDb db, IFieldProtector protector)
 {
     public async Task HandleAsync(SupplierChanged message, CancellationToken cancellationToken)
     {
@@ -15,7 +16,7 @@ public sealed class SupplierChangedHandler(IPayablesDb db)
         SupplierAccount? account = message.BankAccount is { } verified
             ? new SupplierAccount(
                 verified.AccountVersion,
-                Iban.Parse(verified.Iban),
+                Iban.Parse(protector.Unprotect(verified.ProtectedIban)),
                 Bic.Parse(verified.Bic),
                 verified.AccountHolder)
             : null;

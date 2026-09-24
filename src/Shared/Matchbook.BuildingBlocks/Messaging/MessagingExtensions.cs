@@ -1,3 +1,4 @@
+using System.Data;
 using MassTransit;
 using Matchbook.SharedKernel;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,14 @@ public static class MessagingExtensions
     /// <para>
     /// <b>Retries.</b> In memory, outside the outbox, so each attempt gets a fresh transaction and a fresh
     /// DbContext. After the last one the message goes to the endpoint's <c>_error</c> queue. A business refusal is
-    /// not an exception: it is an event, and the consumer succeeds.
+    /// normally an event and the consumer succeeds; a <see cref="BusinessRuleException"/> that escapes a consumer
+    /// is a rule that will say no again, so it goes to the error queue at once instead of being retried.
+    /// </para>
+    /// <para>
+    /// <b>Isolation.</b> Read committed, not MassTransit's default of repeatable read. Correctness here rests on
+    /// conditional updates, row versions and unique constraints, which read committed honours. Under repeatable
+    /// read, two consumers granting from one budget at once do not wait and re-check: one fails with a
+    /// serialization error and burns a retry, and under load that becomes a storm.
     /// </para>
     /// </remarks>
     public static IServiceCollection AddMatchbookMessaging<TDbContext>(
@@ -54,18 +62,23 @@ public static class MessagingExtensions
             {
                 outbox.UsePostgres();
                 outbox.UseBusOutbox();
+                outbox.IsolationLevel = IsolationLevel.ReadCommitted;
                 outbox.QueryDelay = TimeSpan.FromMilliseconds(100);
                 outbox.DuplicateDetectionWindow = TimeSpan.FromHours(1);
             });
 
             bus.AddConfigureEndpointsCallback((context, _, endpoint) =>
             {
-                endpoint.UseMessageRetry(retry => retry.Intervals(
-                    TimeSpan.FromMilliseconds(100),
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(3),
-                    TimeSpan.FromSeconds(10)));
+                endpoint.UseMessageRetry(retry =>
+                {
+                    retry.Ignore<BusinessRuleException>();
+                    retry.Intervals(
+                        TimeSpan.FromMilliseconds(100),
+                        TimeSpan.FromMilliseconds(500),
+                        TimeSpan.FromSeconds(1),
+                        TimeSpan.FromSeconds(3),
+                        TimeSpan.FromSeconds(10));
+                });
                 endpoint.UseEntityFrameworkOutbox<TDbContext>(context);
                 endpoint.ConcurrentMessageLimit = 16;
             });

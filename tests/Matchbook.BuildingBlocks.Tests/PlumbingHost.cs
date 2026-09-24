@@ -1,5 +1,6 @@
 using MassTransit;
 using Matchbook.BuildingBlocks.Hosting;
+using Matchbook.BuildingBlocks.Http;
 using Matchbook.BuildingBlocks.Messaging;
 using Matchbook.BuildingBlocks.Persistence;
 using Matchbook.BuildingBlocks.Security;
@@ -62,7 +63,7 @@ public sealed class PlumbingDbContext(DbContextOptions<PlumbingDbContext> option
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.AddTransactionalOutboxEntities();
-        modelBuilder.Entity<Note>();
+        modelBuilder.Entity<Note>().HasIndex(static note => note.Text).IsUnique().HasDatabaseName("ux_notes_text");
         modelBuilder.Entity<Handled>();
     }
 }
@@ -99,6 +100,7 @@ internal static class PlumbingHost
         builder.Services.AddMatchbookDatabase<PlumbingDbContext, IPlumbingDb>(builder.Configuration);
         builder.Services.AddMatchbookMessaging<PlumbingDbContext>(builder.Configuration, "plumbing", static bus => bus.AddConsumer<PingConsumer>());
         builder.Services.AddAuthorizationBuilder().AddRolePolicy("budgets", Roles.BudgetAdmin);
+        builder.Services.MapUniqueViolation("ux_notes_text", "note.duplicate", "That label exists.");
         builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, static options =>
         {
             options.TokenValidationParameters.ValidIssuer = TestIdentity.Issuer;
@@ -110,7 +112,7 @@ internal static class PlumbingHost
 
         app.MapPost("/notes", static async (bool fail, IPlumbingDb db, IEventPublisher events, CancellationToken cancellationToken) =>
         {
-            var note = new Note { Id = Guid.CreateVersion7(), Text = "hello" };
+            var note = new Note { Id = Guid.CreateVersion7(), Text = Guid.NewGuid().ToString() };
             db.Notes.Add(note);
             await events.PublishAsync(new Noted(note.Id), cancellationToken);
 
@@ -121,6 +123,13 @@ internal static class PlumbingHost
 
             await db.SaveChangesAsync(cancellationToken);
             return TypedResults.Ok(note.Id);
+        });
+
+        app.MapPost("/labels/{text}", static async (string text, IPlumbingDb db, CancellationToken cancellationToken) =>
+        {
+            db.Notes.Add(new Note { Id = Guid.CreateVersion7(), Text = text });
+            await db.SaveChangesAsync(cancellationToken);
+            return TypedResults.Ok();
         });
 
         app.MapGet("/me", static (HttpContext context) => TypedResults.Ok(context.User.ToActor()));

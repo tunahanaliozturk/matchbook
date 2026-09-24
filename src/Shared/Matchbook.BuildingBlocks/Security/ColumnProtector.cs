@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text;
+using Matchbook.SharedKernel;
 using Microsoft.Extensions.Configuration;
 
 namespace Matchbook.BuildingBlocks.Security;
@@ -21,7 +22,7 @@ namespace Matchbook.BuildingBlocks.Security;
 /// concern, far beyond the number of bank accounts this system will ever write under one key.
 /// </para>
 /// </remarks>
-public sealed class ColumnProtector
+public sealed class ColumnProtector : IFieldProtector
 {
     private const string Version = "v1";
     private const int KeySize = 32;

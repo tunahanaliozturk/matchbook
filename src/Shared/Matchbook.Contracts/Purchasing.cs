@@ -36,7 +36,10 @@ public sealed record PurchaseOrderLine(
     decimal UnitPrice,
     decimal Amount);
 
-/// <summary>Goods arrived against an issued order. Quantities are this receipt's, not running totals.</summary>
+/// <summary>
+/// Goods arrived against an issued order. Quantities are this receipt's, not running totals, and each order line
+/// appears at most once per receipt.
+/// </summary>
 public sealed record GoodsReceived(
     Guid ReceiptId,
     Guid PurchaseOrderId,

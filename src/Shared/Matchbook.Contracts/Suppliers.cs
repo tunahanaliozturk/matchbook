@@ -23,7 +23,18 @@ public sealed record SupplierChanged(
 /// A bank account a second person approved. <see cref="AccountVersion"/> rises with every approved change, so a
 /// payment run can tell whether the account it was drafted against is still the current one.
 /// </summary>
-public sealed record VerifiedBankAccount(int AccountVersion, string Iban, string Bic, string AccountHolder);
+/// <remarks>
+/// <see cref="ProtectedIban"/> is the IBAN encrypted under the payment-data key that Suppliers and Payables
+/// share (ADR 0007), in the <c>ColumnProtector</c> format. The account number is therefore never plain text in an
+/// outbox table, on the broker, or in a service that has no reason to read it. <see cref="IbanLastFour"/> is
+/// enough to show which account is meant.
+/// </remarks>
+public sealed record VerifiedBankAccount(
+    int AccountVersion,
+    string ProtectedIban,
+    string IbanLastFour,
+    string Bic,
+    string AccountHolder);
 
 /// <summary>Values of <see cref="SupplierChanged.Status"/>.</summary>
 public static class SupplierStatus

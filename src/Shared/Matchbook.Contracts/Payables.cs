@@ -14,7 +14,10 @@ public sealed record InvoiceMatched(
     decimal Amount,
     DateTimeOffset OccurredAt);
 
-/// <summary>An invoiced line as matched. <see cref="Amount"/> is <c>Amounts.Line(Quantity, UnitPrice)</c>.</summary>
+/// <summary>
+/// An invoiced line as matched, at most one per order line per invoice. <see cref="Amount"/> is
+/// <c>Amounts.Line(Quantity, UnitPrice)</c>.
+/// </summary>
 public sealed record MatchedLine(int LineNumber, decimal Quantity, decimal UnitPrice, decimal Amount);
 
 /// <summary>A released payment run paid the invoice.</summary>

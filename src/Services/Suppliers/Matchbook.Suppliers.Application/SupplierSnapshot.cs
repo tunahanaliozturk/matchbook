@@ -1,3 +1,4 @@
+using Matchbook.SharedKernel;
 using Matchbook.Suppliers.Domain;
 using Contract = Matchbook.Contracts.Suppliers;
 
@@ -6,11 +7,13 @@ namespace Matchbook.Suppliers.Application;
 internal static class SupplierSnapshot
 {
     /// <summary>
-    /// The state other services keep a copy of. It carries the full IBAN, because Payables writes it into the
-    /// payment file; Payables encrypts it at rest like this service does.
+    /// The state other services keep a copy of. The IBAN goes out encrypted under the payment-data key, which
+    /// only Payables shares, because Payables writes it into the payment file and nobody else needs it.
     /// </summary>
-    public static Contract.SupplierChanged From(Supplier supplier, DateTimeOffset now)
+    public static Contract.SupplierChanged From(Supplier supplier, DateTimeOffset now, IFieldProtector protector)
     {
+        ArgumentNullException.ThrowIfNull(protector);
+
         BankAccount? account = supplier.VerifiedAccount;
 
         return new Contract.SupplierChanged(
@@ -30,7 +33,11 @@ internal static class SupplierSnapshot
             account is null
                 ? null
                 : new Contract.VerifiedBankAccount(
-                    supplier.AccountVersion, account.Iban.Value, account.Bic.Value, account.AccountHolder),
+                    supplier.AccountVersion,
+                    protector.Protect(account.Iban.Value),
+                    account.Iban.Value[^4..],
+                    account.Bic.Value,
+                    account.AccountHolder),
             now);
     }
 }

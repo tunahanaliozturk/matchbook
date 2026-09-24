@@ -21,3 +21,6 @@ a change to this project is always a deliberate one.
 Values that look like enums (`SupplierStatus`, `FundsRejectionReason`, `PurchaseOrderCloseReason`) are strings
 on the wire. A consumer that meets a value it does not know treats it as the most cautious one it does: an
 unknown supplier status is not `Active`.
+
+Every `OccurredAt` is UTC, with a zero offset. Postgres `timestamptz` columns written through Npgsql accept
+nothing else, and a consumer should never have to guess.

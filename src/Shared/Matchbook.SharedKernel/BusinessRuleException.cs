@@ -30,6 +30,15 @@ public sealed class BusinessRuleException : Exception
         Kind = kind;
     }
 
+    /// <summary>A rule said no because of an error underneath, such as a unique index refusing a row.</summary>
+    public BusinessRuleException(string code, string message, ViolationKind kind, Exception innerException)
+        : base(message, innerException)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        Code = code;
+        Kind = kind;
+    }
+
     public BusinessRuleException()
         : this("business_rule", "A business rule was broken.")
     {

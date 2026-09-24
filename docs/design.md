@@ -72,8 +72,8 @@ No project of one service references a project of another. What one service know
   with `Amounts.Line(quantity, unitPrice)` so every service rounds identically.
 - Aggregates that users edit concurrently carry a concurrency token (Postgres `xmin`). A lost race is a 409 with
   code `concurrency.conflict`, never a silent overwrite.
-- Identifiers are `Guid.CreateVersion7()`. Human-facing numbers (`REQ-2026-000042`, `PO-2026-000017`) come from a
-  Postgres sequence per year.
+- Identifiers are `Guid.CreateVersion7()`. Human-facing numbers (`REQ-2026-000042`, `PO-2026-000017`) come from one
+  Postgres sequence per service, with the document's year written into the number; they do not restart in January.
 - Reads use `AsNoTracking`. Lists use keyset pagination (`?after=<cursor>&limit=`, limit capped at 200).
 
 ### Messaging
@@ -106,6 +106,12 @@ No project of one service references a project of another. What one service know
 - Errors are RFC 9457 problem details with a `code` extension. `BusinessRuleException` maps to 422, 409, 404 or
   403 by its `Kind`. Validation of a request's shape is 400 with the failing fields.
 - Every mutating endpoint returns the resource's new state, so a client never needs a second read.
+- **Creates are idempotent on a client-supplied id.** A POST that creates something accepts an optional `id`
+  (a GUID the client generates). Repeating the request with the same id returns what the first one created instead
+  of creating a second; the same id with different content is a 409 `request.id_reused`. A client that lost the
+  response to a timeout can retry without buying twice.
+- A unique index the database enforces maps to a 409 with a stable code through `MapUniqueViolation`, so the
+  loser of a race gets the same answer as a request the application refused itself.
 
 | Service | Paths |
 |---|---|
@@ -122,7 +128,9 @@ No project of one service references a project of another. What one service know
 - Four eyes: a bank account change, a supplier activation and a payment run each need a second person, and the
   second person cannot be the first.
 - IBANs are encrypted at rest (AES-256-GCM, `ColumnProtector` in BuildingBlocks) in every service that stores
-  one, and masked in every response except where a person has to verify them.
+  one, and masked in every response except where a person has to verify them. They travel encrypted too:
+  `SupplierChanged` carries the IBAN under the payment-data key that only Suppliers and Payables hold (ADR 0007),
+  so it is never plain text in an outbox table or on the broker.
 - No secret, token or full IBAN in a log line.
 
 ### Observability
@@ -199,7 +207,8 @@ price estimate), a justification, a needed-by date. The amount is the sum of the
   `BudgetRejected`, `Rejected` and `Cancelled` as ends. Only its requester edits, submits or cancels it, and only
   before approval.
 - On submit, the cost centre must be known and active and the supplier known and active, from the local copies
-  kept from `CostCentreChanged` and `SupplierChanged`.
+  kept from `CostCentreChanged` and `SupplierChanged`. A manager cannot raise a requisition against a cost centre
+  they manage, since nobody could take the manager step.
 - **Approval route**, fixed when funds are reserved: the cost centre's manager; then a `finance-approver` if the
   amount is over 10,000; then the `cfo` if over 100,000. Steps are sequential.
 - **Separation of duties**: no one approves their own requisition, and no one approves two steps of the same

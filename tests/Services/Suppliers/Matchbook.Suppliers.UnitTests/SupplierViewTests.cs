@@ -55,14 +55,14 @@ public sealed class SupplierViewTests
     }
 
     [Fact]
-    public void The_snapshot_carries_the_account_in_force_with_its_version_and_the_full_iban()
+    public void The_snapshot_carries_the_account_in_force_with_its_version_and_the_iban_protected()
     {
         Supplier supplier = Given.Active();
         BankAccount second = Given.Propose(supplier, ibanNumber: 2);
         supplier.ApproveBankAccount(People.Approver, second.Id, Given.Now);
         Given.Propose(supplier, ibanNumber: 3);
 
-        Contract.SupplierChanged snapshot = SupplierSnapshot.From(supplier, Given.Now.AddDays(1));
+        Contract.SupplierChanged snapshot = SupplierSnapshot.From(supplier, Given.Now.AddDays(1), MarkingProtector.Instance);
 
         snapshot.ShouldBe(new Contract.SupplierChanged(
             supplier.Id,
@@ -71,15 +71,26 @@ public sealed class SupplierViewTests
             "DE",
             Contract.SupplierStatus.Active,
             30,
-            new Contract.VerifiedBankAccount(2, TestIbans.Numbered(2), "DEUTDEFF", "Acme GmbH"),
+            new Contract.VerifiedBankAccount(
+                2, $"protected:{TestIbans.Numbered(2)}", TestIbans.Numbered(2)[^4..], "DEUTDEFF", "Acme GmbH"),
             Given.Now.AddDays(1)));
     }
 
     [Fact]
     public void A_blocked_supplier_is_published_as_blocked() =>
-        SupplierSnapshot.From(Given.Blocked(), Given.Now).Status.ShouldBe(Contract.SupplierStatus.Blocked);
+        SupplierSnapshot.From(Given.Blocked(), Given.Now, MarkingProtector.Instance).Status.ShouldBe(Contract.SupplierStatus.Blocked);
 
     [Fact]
     public void A_supplier_that_was_never_activated_has_no_snapshot() =>
-        Should.Throw<InvalidOperationException>(() => SupplierSnapshot.From(Given.Pending(), Given.Now));
+        Should.Throw<InvalidOperationException>(() => SupplierSnapshot.From(Given.Pending(), Given.Now, MarkingProtector.Instance));
+}
+
+/// <summary>Marks what it protects, so a test can see that the IBAN went through the protector.</summary>
+internal sealed class MarkingProtector : IFieldProtector
+{
+    public static readonly MarkingProtector Instance = new();
+
+    public string Protect(string plaintext) => $"protected:{plaintext}";
+
+    public string Unprotect(string stored) => stored["protected:".Length..];
 }

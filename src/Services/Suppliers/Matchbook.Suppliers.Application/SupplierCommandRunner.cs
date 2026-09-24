@@ -8,7 +8,7 @@ namespace Matchbook.Suppliers.Application;
 /// change, publish a snapshot if the version moved, and save both in one <c>SaveChangesAsync</c>, which is what
 /// puts the event in the outbox in the same transaction as the change.
 /// </summary>
-public sealed class SupplierCommandRunner(ISuppliersDb db, IEventPublisher events, TimeProvider clock)
+public sealed class SupplierCommandRunner(ISuppliersDb db, IEventPublisher events, IFieldProtector protector, TimeProvider clock)
 {
     public async Task<SupplierView> RunAsync(
         Guid supplierId, Actor actor, Action<Supplier, DateTimeOffset> change, CancellationToken cancellationToken)
@@ -23,7 +23,7 @@ public sealed class SupplierCommandRunner(ISuppliersDb db, IEventPublisher event
 
         if (supplier.Version != versionBefore)
         {
-            await events.PublishAsync(SupplierSnapshot.From(supplier, now), cancellationToken);
+            await events.PublishAsync(SupplierSnapshot.From(supplier, now, protector), cancellationToken);
         }
 
         await db.SaveChangesAsync(cancellationToken);

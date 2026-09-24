@@ -95,6 +95,16 @@ public sealed class PlumbingTests(PlumbingFixture fixture) : IClassFixture<Plumb
     }
 
     [Fact]
+    public async Task Losing_a_race_on_a_unique_index_is_a_conflict_with_the_mapped_code()
+    {
+        HttpClient client = Client(TestUsers.Rita);
+        var label = new Uri($"/labels/{Guid.NewGuid()}", UriKind.Relative);
+
+        (await client.PostAsync(label, null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        await (await client.PostAsync(label, null)).ShouldBeProblemAsync(HttpStatusCode.Conflict, "note.duplicate");
+    }
+
+    [Fact]
     public async Task An_unexpected_failure_says_nothing_about_itself()
     {
         HttpResponseMessage response = await Client(TestUsers.Rita).PostAsync(new Uri("/notes?fail=true", UriKind.Relative), null);

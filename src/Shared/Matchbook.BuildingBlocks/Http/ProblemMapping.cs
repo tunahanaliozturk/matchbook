@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Matchbook.BuildingBlocks.Http;
 
@@ -14,7 +16,7 @@ namespace Matchbook.BuildingBlocks.Http;
 /// Anything else is left to the default handler, which answers 500 without detail. An unexpected exception is
 /// logged by the framework, and its message never reaches the caller.
 /// </remarks>
-internal sealed class ProblemMapping(IProblemDetailsService problems) : IExceptionHandler
+internal sealed class ProblemMapping(IProblemDetailsService problems, IOptions<UniqueViolations> uniqueViolations) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
@@ -23,6 +25,8 @@ internal sealed class ProblemMapping(IProblemDetailsService problems) : IExcepti
             BusinessRuleException rule => (StatusFor(rule.Kind), rule.Code, rule.Message),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "concurrency.conflict",
                 "Someone else changed this since you read it. Read it again and retry."),
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } unique } =>
+                Duplicate(unique.ConstraintName),
             BadHttpRequestException bad => (bad.StatusCode, "request.malformed", "The request could not be read."),
             _ => null,
         };
@@ -47,6 +51,11 @@ internal sealed class ProblemMapping(IProblemDetailsService problems) : IExcepti
             },
         });
     }
+
+    private (int, string, string) Duplicate(string? constraint) =>
+        constraint is not null && uniqueViolations.Value.ByConstraint.TryGetValue(constraint, out (string Code, string Message) known)
+            ? (StatusCodes.Status409Conflict, known.Code, known.Message)
+            : (StatusCodes.Status409Conflict, "conflict.duplicate", "Something with the same identity already exists.");
 
     private static int StatusFor(ViolationKind kind) => kind switch
     {
