@@ -181,6 +181,28 @@ public sealed class MatchingTests(PayablesFixture fixture) : IClassFixture<Payab
     }
 
     [Fact]
+    public async Task Two_invoices_captured_on_one_order_at_the_same_moment_are_both_matched()
+    {
+        // Both captures read the order's row and then meet at its update; the second finds the revision moved. That
+        // conflict is on a row neither clerk read, so it is the service's to retry, not theirs. Different totals, or
+        // the second would be held as a suspected duplicate before it ever reached the order.
+        Guid supplier = await _given.SupplierAsync();
+        Guid order = await _given.OrderAsync(supplier, (1, 10, 10m));
+        await _given.ReceiveAsync(order, (1, 10));
+
+        HttpResponseMessage[] responses = await Race.AtAsync(
+            _given.Host.Database,
+            $"select 1 from purchase_orders where id = '{order}' for no key update",
+            () => _given.PostCaptureAsync(TestUsers.Alice, Scenario.Invoice(supplier, order, "INV-SAME-ORDER-1", Scenario.Today, (1, 4, 10m))),
+            () => _given.PostCaptureAsync(TestUsers.Alice, Scenario.Invoice(supplier, order, "INV-SAME-ORDER-2", Scenario.Today, (1, 6, 10m))));
+
+        foreach (HttpResponseMessage response in responses)
+        {
+            (await Scenario.ReadAsync<InvoiceView>(response, HttpStatusCode.Created)).Status.ShouldBe(InvoiceStatus.Payable);
+        }
+    }
+
+    [Fact]
     public async Task A_capture_repeated_with_its_id_returns_the_same_invoice_and_different_content_is_refused()
     {
         Guid supplier = await _given.SupplierAsync();

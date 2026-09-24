@@ -70,7 +70,7 @@ Healthy: every line says `(healthy)` except `dashboard`, which has no health che
 | `matchbook.suppliers.changes` with `change=bank_account_approved` | dashboard | a jump against the usual daily count | Bank account changes are the classic payment fraud route. |
 | `matchbook.budgets.overspends` | dashboard | any | An invoice took a budget past its allotment, which accepted price variances can do. Finance wants to know the same day. |
 | 5xx from the gateway | dashboard, `http.server.request.duration` on `Matchbook.Gateway` | above 1% for 5 minutes | 502 and 503 mean a service is down behind the gateway. |
-| 409 `concurrency.conflict` | dashboard, per service | a sustained rise | Two writers keep meeting on one row. Some are expected (see Known limitations). |
+| 409 `concurrency.conflict` | dashboard, per service | a sustained rise | Two people keep changing one document at once, or one order is so busy that Payables' three internal retries are not enough. |
 
 The outbox and error queue checks have no metric of their own yet. The queries:
 
@@ -157,22 +157,10 @@ decrypts it with the same key (ADR 0007). Both services must therefore hold a ke
 **Do not remove an old key** until every row that names it has been rewritten, which nothing does
 automatically yet. A missing key makes those IBANs unreadable, and the error names the key it wanted.
 
-### Invoice capture answers 409 `concurrency.conflict`
-
-**Confirm.** The response carries `"code": "concurrency.conflict"`, and a receipt for the same order was being
-recorded at the same moment.
-
-**Act.** Send the same request again with the same `id`. The first attempt was rolled back entirely, so the
-retry captures the invoice once. See Known limitations.
-
 ## Known limitations
 
 - **Migrations run when a service starts.** Fine for one replica. Several replicas starting together would race
   for the migration; production would run them as a separate job before the rollout.
-- **Invoice capture can lose a race it did not start.** Capturing an invoice and storing a receipt both claim the
-  order's row in Payables. When they meet, the receipt (a consumer) is retried by MassTransit, but the capture
-  answers 409 `concurrency.conflict` and the client has to retry with the same id. The system tests do; a person
-  at a screen would see an error for something they did not cause. Retrying inside the handler would hide it.
 - **Reconciliation runs only in the tests.** The eight invariants in `tests/Matchbook.Stack` are checked after
   every system test run, not on a schedule against a live system.
 - **One currency** (ADR 0006). Every amount is in the company's currency; there is no FX.

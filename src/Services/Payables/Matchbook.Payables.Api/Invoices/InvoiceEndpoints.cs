@@ -59,10 +59,11 @@ internal static class InvoiceEndpoints
     private static async Task<Created<InvoiceView>> Capture(
         CaptureInvoiceRequest request,
         ClaimsPrincipal user,
-        CaptureInvoiceHandler handler,
+        OrderRaceRetry retry,
         CancellationToken cancellationToken)
     {
-        InvoiceView invoice = await handler.HandleAsync(request.ToCommand(), user.ToActor(), cancellationToken);
+        InvoiceView invoice = await retry.RunAsync<CaptureInvoiceHandler, InvoiceView>(
+            handler => handler.HandleAsync(request.ToCommand(), user.ToActor(), cancellationToken));
         return TypedResults.Created($"/invoices/{invoice.Id}", invoice);
     }
 
@@ -88,14 +89,16 @@ internal static class InvoiceEndpoints
         Guid id,
         AcceptPriceVarianceRequest request,
         ClaimsPrincipal user,
-        AcceptPriceVarianceHandler handler,
+        OrderRaceRetry retry,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(await handler.HandleAsync(id, request.Reason!, user.ToActor(), cancellationToken));
+        TypedResults.Ok(await retry.RunAsync<AcceptPriceVarianceHandler, InvoiceView>(
+            handler => handler.HandleAsync(id, request.Reason!, user.ToActor(), cancellationToken)));
 
     private static async Task<Ok<InvoiceView>> ClearSuspectedDuplicate(
         Guid id,
         ClaimsPrincipal user,
-        ClearSuspectedDuplicateHandler handler,
+        OrderRaceRetry retry,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(await handler.HandleAsync(id, user.ToActor(), cancellationToken));
+        TypedResults.Ok(await retry.RunAsync<ClearSuspectedDuplicateHandler, InvoiceView>(
+            handler => handler.HandleAsync(id, user.ToActor(), cancellationToken)));
 }

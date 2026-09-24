@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<PayablesMetrics>();
 
+        services.AddSingleton<OrderRaceRetry>();
         services.AddScoped<InvoiceMatcher>();
         services.AddScoped<CaptureInvoiceHandler>();
         services.AddScoped<GetInvoiceHandler>();

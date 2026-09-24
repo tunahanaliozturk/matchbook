@@ -78,7 +78,7 @@ has a fair case; ADR 0002 names it and says why it lost here.
 | No project references another service's projects, and Domain references nothing but the shared kernel | `tests/Matchbook.ArchitectureTests` |
 
 Against real Postgres 18 and RabbitMQ 4.3 in containers throughout; there is no in-memory database or transport
-anywhere in the tests. 666 unit tests, 203 integration tests, 30 architecture tests and 2 system tests.
+anywhere in the tests. 666 unit tests, 204 integration tests, 30 architecture tests and 2 system tests.
 
 ## Stack
 
@@ -101,8 +101,8 @@ cost a commercial user money.
 
 The full list is in `docs/operations.md`. The ones a reviewer is most likely to hit first:
 
-- Invoice capture can answer 409 `concurrency.conflict` when a receipt for the same order is stored at the same
-  moment; the client retries with the same id.
+- The outbox delivers at least once. A reply can reach the broker twice under one message id; every consumer's
+  inbox drops the copy, but anything else listening to the broker has to do the same.
 - The reconciler runs only in the tests, not on a schedule.
 - One currency, one replica per service tested, migrations run at startup.
 

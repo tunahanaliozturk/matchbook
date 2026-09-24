@@ -245,7 +245,9 @@ run's row for two releases, the invoices table for two captures of one number), 
 `pg_stat_activity` until Postgres shows both blocked on that lock, and then lets go. The requests then meet at exactly
 the statement under test, every time: one draft wins and the other is a 409 `payment_run.invoice_taken` with nothing
 of it stored; one release pays and the other is a 409 `concurrency.conflict`, with one `InvoicePaid` per invoice; one
-capture is stored and the other is a 409 `invoice.duplicate`.
+capture is stored and the other is a 409 `invoice.duplicate`. Two captures of different invoices on one order are
+held at the order's row instead (`for no key update`, so the invoice inserts pass), and both come back 201 and
+payable.
 
 ## Phase 2 decisions
 
@@ -260,6 +262,13 @@ capture is stored and the other is a 409 `invoice.duplicate`.
   then meet at the unique index before either writes the order row, so the loser hears `invoice.duplicate`. Rejected
   alternative: one save, where the loser could instead fail on the order row's revision and hear
   `concurrency.conflict`, which a retry would only turn into the duplicate answer.
+- **Commands that claim an order are retried by the service when they lose the order's row.** Capture, accepting a
+  variance and clearing a suspected duplicate all revise the order, and so do the receipt and order consumers. The
+  system tests found a capture meeting a receipt under load and answering 409 `concurrency.conflict`, "someone else
+  changed this since you read it", to a clerk who had read nothing. `OrderRaceRetry` runs the command again in a fresh
+  scope, up to three times; `Two_invoices_captured_on_one_order_at_the_same_moment_are_both_matched` failed with that
+  409 on every run before it. Rejected alternative: clearing the change tracker and going round again in the same
+  scope, which leaves the outbox's scoped state describing rows the rollback removed.
 - **An idempotent create returns the resource as it is now**, with 201, when the id and the content match. Rejected
   alternative: store each request's fingerprint and first response in a table of their own. That is another table and
   another write per create, and a client retrying after a lost response wants the resource, not a snapshot of it.

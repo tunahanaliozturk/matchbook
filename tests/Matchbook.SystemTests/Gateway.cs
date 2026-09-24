@@ -48,8 +48,8 @@ internal sealed class Gateway(StackOptions options, HttpClient http) : IDisposab
 
     /// <summary>
     /// A lost race is answered 409 <c>concurrency.conflict</c> after the service rolled its transaction back, so
-    /// nothing happened and the request is sent again, as the answer asks. Payables, for one, gives that answer
-    /// when an invoice is captured while a receipt for the same order is being stored.
+    /// nothing happened and the request is sent again, as the answer asks. Payables retries its own order races
+    /// before answering, so this is the client's share of the contract rather than a workaround for one service.
     /// </summary>
     private async Task<JsonElement> SendAsync(Actor actor, HttpMethod method, string path, object? body)
     {
