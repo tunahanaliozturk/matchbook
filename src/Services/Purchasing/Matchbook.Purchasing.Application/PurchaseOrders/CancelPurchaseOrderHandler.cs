@@ -6,7 +6,8 @@ namespace Matchbook.Purchasing.Application.PurchaseOrders;
 /// Cancels an order and tells Budgets to let go of whatever it holds for it: the commitment if the order was
 /// committed, otherwise the requisition's reservation.
 /// </summary>
-public sealed class CancelPurchaseOrderHandler(IPurchasingDb db, IEventPublisher publisher, TimeProvider clock)
+public sealed class CancelPurchaseOrderHandler(
+    IPurchasingDb db, IEventPublisher publisher, TimeProvider clock, PurchasingMetrics metrics)
 {
     public async Task<PurchaseOrderView> HandleAsync(
         Guid purchaseOrderId, Actor buyer, CancellationToken cancellationToken)
@@ -16,6 +17,7 @@ public sealed class CancelPurchaseOrderHandler(IPurchasingDb db, IEventPublisher
 
         await publisher.PublishAsync(OutgoingEvents.Closed(order), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        metrics.OrderClosed(order.Status);
         return PurchaseOrderView.From(order);
     }
 }

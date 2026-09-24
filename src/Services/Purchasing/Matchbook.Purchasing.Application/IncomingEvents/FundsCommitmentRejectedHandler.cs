@@ -9,7 +9,7 @@ namespace Matchbook.Purchasing.Application.IncomingEvents;
 /// requisition's reservation still stands, so the buyer can change the order and issue it again.
 /// </summary>
 public sealed class FundsCommitmentRejectedHandler(
-    IPurchasingDb db, ILogger<FundsCommitmentRejectedHandler> logger)
+    IPurchasingDb db, PurchasingMetrics metrics, ILogger<FundsCommitmentRejectedHandler> logger)
 {
     public async Task HandleAsync(FundsCommitmentRejected message, CancellationToken cancellationToken)
     {
@@ -25,5 +25,6 @@ public sealed class FundsCommitmentRejectedHandler(
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        metrics.CommitmentRejected(message.Reason);
     }
 }

@@ -16,12 +16,16 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<PurchasingMetrics>();
 
         services.AddScoped<GetPurchaseOrderHandler>();
+        services.AddScoped<GetPurchaseOrderForRequisitionHandler>();
         services.AddScoped<ListPurchaseOrdersHandler>();
         services.AddScoped<AmendDraftLineHandler>();
         services.AddScoped<IssuePurchaseOrderHandler>();
         services.AddScoped<RecordReceiptHandler>();
+        services.AddScoped<ListReceiptsHandler>();
+        services.AddScoped<GetReceiptHandler>();
         services.AddScoped<ShortClosePurchaseOrderHandler>();
         services.AddScoped<CancelPurchaseOrderHandler>();
 
