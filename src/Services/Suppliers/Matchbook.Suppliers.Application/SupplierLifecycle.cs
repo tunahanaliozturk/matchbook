@@ -12,7 +12,8 @@ public sealed class SubmitSupplierHandler(SupplierCommandRunner runner)
     public Task<SupplierView> HandleAsync(SubmitSupplier command, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        return runner.RunAsync(command.SupplierId, actor, (supplier, now) => supplier.Submit(actor, now), cancellationToken);
+        return runner.RunAsync(
+            command.SupplierId, actor, "submitted", (supplier, now) => supplier.Submit(actor, now), cancellationToken);
     }
 }
 
@@ -24,7 +25,8 @@ public sealed class ActivateSupplierHandler(SupplierCommandRunner runner)
     public Task<SupplierView> HandleAsync(ActivateSupplier command, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        return runner.RunAsync(command.SupplierId, actor, (supplier, now) => supplier.Activate(actor, now), cancellationToken);
+        return runner.RunAsync(
+            command.SupplierId, actor, "activated", (supplier, now) => supplier.Activate(actor, now), cancellationToken);
     }
 }
 
@@ -37,7 +39,11 @@ public sealed class BlockSupplierHandler(SupplierCommandRunner runner)
     {
         ArgumentNullException.ThrowIfNull(command);
         return runner.RunAsync(
-            command.SupplierId, actor, (supplier, now) => supplier.Block(actor, command.Reason, now), cancellationToken);
+            command.SupplierId,
+            actor,
+            "blocked",
+            (supplier, now) => supplier.Block(actor, command.Reason, now),
+            cancellationToken);
     }
 }
 
@@ -49,6 +55,7 @@ public sealed class UnblockSupplierHandler(SupplierCommandRunner runner)
     public Task<SupplierView> HandleAsync(UnblockSupplier command, Actor actor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        return runner.RunAsync(command.SupplierId, actor, (supplier, _) => supplier.Unblock(actor), cancellationToken);
+        return runner.RunAsync(
+            command.SupplierId, actor, "unblocked", (supplier, _) => supplier.Unblock(actor), cancellationToken);
     }
 }

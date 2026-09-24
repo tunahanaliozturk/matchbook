@@ -35,7 +35,7 @@ internal static class SupplierSnapshot
                 : new Contract.VerifiedBankAccount(
                     supplier.AccountVersion,
                     protector.Protect(account.Iban.Value),
-                    account.Iban.Value[^4..],
+                    account.Iban.LastFour,
                     account.Bic.Value,
                     account.AccountHolder),
             now);
