@@ -4,7 +4,11 @@ using Matchbook.SharedKernel;
 
 namespace Matchbook.Requisitions.Application.UseCases;
 
-public sealed class RejectRequisitionHandler(IRequisitionsDb db, IEventPublisher publisher, TimeProvider time)
+public sealed class RejectRequisitionHandler(
+    IRequisitionsDb db,
+    IEventPublisher publisher,
+    RequisitionMetrics metrics,
+    TimeProvider time)
 {
     public async Task<RequisitionView> HandleAsync(
         Actor actor,
@@ -21,6 +25,7 @@ public sealed class RejectRequisitionHandler(IRequisitionsDb db, IEventPublisher
             new RequisitionRejected(requisition.Id, actor.Id, requisition.RejectionReason ?? reason, now),
             cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        metrics.Rejected();
         return RequisitionView.From(requisition);
     }
 }

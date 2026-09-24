@@ -10,7 +10,8 @@ namespace Matchbook.Requisitions.Application.IncomingEvents;
 /// </summary>
 internal static class RequisitionFacts
 {
-    public static async Task RecordAsync(
+    /// <summary>Returns whether the fact changed the requisition and was saved.</summary>
+    public static async Task<bool> RecordAsync(
         this IRequisitionsDb db,
         Guid requisitionId,
         string eventName,
@@ -24,15 +25,16 @@ internal static class RequisitionFacts
             // Every requisition is committed before its first event leaves the outbox, so this is a message
             // meant for another environment or a database restored from before it. Nothing here can use it.
             logger.UnknownRequisition(eventName, requisitionId);
-            return;
+            return false;
         }
 
         if (!record(requisition))
         {
             logger.FactIgnored(eventName, requisition.Number, requisition.Status);
-            return;
+            return false;
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }
