@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Drives the running compose stack from outside, the way people and other systems do: tokens from Keycloak,
+    requests through the gateway. Also reads every service database through the read-only reconciler role and
+    checks the invariants that span services. Shared by the system tests and the load harness.
+  -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+</Project>

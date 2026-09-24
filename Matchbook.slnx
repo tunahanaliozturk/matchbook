@@ -39,6 +39,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Matchbook.Testing/Matchbook.Testing.csproj" />
+    <Project Path="tests/Matchbook.Stack/Matchbook.Stack.csproj" />
     <Project Path="tests/Matchbook.ArchitectureTests/Matchbook.ArchitectureTests.csproj" />
     <Project Path="tests/Matchbook.BuildingBlocks.Tests/Matchbook.BuildingBlocks.Tests.csproj" />
   </Folder>
