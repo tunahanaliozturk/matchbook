@@ -37,10 +37,12 @@ export async function expectAccessible(page: Page): Promise<void> {
     const blocking = [];
 
     for (const colorScheme of ["light", "dark"] as const) {
-        await page.emulateMedia({ colorScheme });
-        // Controls ease their colours over 180 ms; measured mid-transition, a button is neither light nor dark.
+        // Reduced motion makes every transition instant (base.css), so nothing is measured mid-fade: a button easing
+        // between appearances, or a confirmation fading in, reads as neither colour and fails contrast by chance.
+        await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+        // Anything already running finishes first; one the switch cancels counts as finished.
         await page.evaluate(() =>
-            Promise.all(document.getAnimations().map((animation) => animation.finished)),
+            Promise.allSettled(document.getAnimations().map((animation) => animation.finished)),
         );
         const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
         blocking.push(
@@ -53,7 +55,7 @@ export async function expectAccessible(page: Page): Promise<void> {
         );
     }
 
-    await page.emulateMedia({ colorScheme: null });
+    await page.emulateMedia({ colorScheme: null, reducedMotion: null });
 
     // Name each offending element and axe's own finding, so a failure says what to fix, not just that something is wrong.
     expect(
