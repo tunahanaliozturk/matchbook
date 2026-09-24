@@ -6,8 +6,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The core package only: DbSet and async LINQ. The provider, migrations and naming live in Infrastructure. -->
+    <!--
+      Provider-neutral EF Core only: DbSet and async LINQ, plus Relational for AsSplitQuery, since a requisition
+      loads three child collections and one joined query would multiply them. The provider, migrations and
+      naming live in Infrastructure.
+    -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
