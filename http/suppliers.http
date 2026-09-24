@@ -1,0 +1,123 @@
+# Suppliers through the gateway, in the order a reader would try them. Start the stack with
+# `docker compose up -d`, then run the requests top to bottom: sam (supplier-admin) creates, proposes and
+# submits; sofia (supplier-approver) checks the account, approves it and activates the supplier.
+
+@gateway = http://localhost:5300/api
+
+### Log in as sam, supplier-admin.
+# @name login
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=sam&password=matchbook
+
+### Log in as sofia, supplier-approver.
+# @name approverLogin
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=sofia&password=matchbook
+
+### Create a supplier as a draft (add "id": "<a GUID>" to make a retry return the same supplier).
+# @name create
+POST {{gateway}}/suppliers
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "legalName": "Acme GmbH",
+  "taxId": "DE {{$randomInt 100000000 999999999}}",
+  "countryCode": "DE",
+  "paymentTermsDays": 30,
+  "contactEmail": "ap@acme.example"
+}
+
+### Read it back; any supplier role or the auditor may.
+GET {{gateway}}/suppliers/{{create.response.body.id}}
+Authorization: Bearer {{login.response.body.access_token}}
+
+### Correct the details; a changed name, country or terms is published once the supplier is active.
+PUT {{gateway}}/suppliers/{{create.response.body.id}}
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "legalName": "Acme Deutschland GmbH",
+  "taxId": "{{create.response.body.taxId}}",
+  "countryCode": "DE",
+  "paymentTermsDays": 45,
+  "contactEmail": "ap@acme.example"
+}
+
+### Propose a bank account; sam's own response shows the IBAN masked.
+# @name propose
+POST {{gateway}}/suppliers/{{create.response.body.id}}/bank-accounts
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "iban": "DE89 3704 0044 0532 0130 00",
+  "bic": "DEUTDEFF",
+  "accountHolder": "Acme Deutschland GmbH"
+}
+
+### Try to approve it as sam: 403 supplier.role_required, a second person has to.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/bank-accounts/{{propose.response.body.bankAccounts[0].id}}/approve
+Authorization: Bearer {{login.response.body.access_token}}
+
+### Sofia reviews the supplier and sees the pending IBAN in full, to check it against the supplier's letter.
+GET {{gateway}}/suppliers/{{create.response.body.id}}
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+
+### Sofia approves the account; it is now in force with account version 1.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/bank-accounts/{{propose.response.body.bankAccounts[0].id}}/approve
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+
+### Sam submits the draft for activation.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/submit
+Authorization: Bearer {{login.response.body.access_token}}
+
+### Sofia sees what is waiting for her: suppliers pending activation.
+GET {{gateway}}/suppliers?status=PendingActivation&limit=50
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+
+### Sofia activates it, which publishes SupplierChanged version 1.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/activate
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+
+### Either role blocks an active supplier, with a reason; version 2.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/block
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{ "reason": "Bank details reported as changed by phone; checking with the supplier." }
+
+### Only a supplier approver lifts the block; version 3.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/unblock
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+
+### Propose a second account; the first stays in force until this one is approved.
+# @name proposeAgain
+POST {{gateway}}/suppliers/{{create.response.body.id}}/bank-accounts
+Authorization: Bearer {{login.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "iban": "GB29 NWBK 6016 1331 9268 19",
+  "bic": "NWBKGB2L",
+  "accountHolder": "Acme Deutschland GmbH"
+}
+
+### Sofia turns it down with a reason; nothing is published and the first account stays in force.
+POST {{gateway}}/suppliers/{{create.response.body.id}}/bank-accounts/{{proposeAgain.response.body.bankAccounts[0].id}}/reject
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+Content-Type: application/json
+
+{ "reason": "The letter was not on company paper." }
+
+### Suppliers with a proposal waiting, a page at a time; pass "next" from the response as after=.
+GET {{gateway}}/suppliers?hasPendingBankAccount=true&limit=20
+Authorization: Bearer {{approverLogin.response.body.access_token}}
+
+### The OpenAPI document, which needs no token.
+GET http://localhost:5300/openapi/suppliers.json
