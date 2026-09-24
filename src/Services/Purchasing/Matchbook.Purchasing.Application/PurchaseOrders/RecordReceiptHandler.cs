@@ -28,8 +28,7 @@ public sealed class RecordReceiptHandler(
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(receiver);
 
-        if (command.ReceiptId is { } id
-            && await db.GoodsReceipts.AsNoTracking().SingleOrDefaultAsync(receipt => receipt.Id == id, cancellationToken) is { } existing)
+        if (command.ReceiptId is { } id && await StoredAsync(id, cancellationToken) is { } existing)
         {
             return existing.IsRepeatedBy(command.PurchaseOrderId, receiver.Id, command.Lines)
                 ? GoodsReceiptView.From(existing)
@@ -44,8 +43,14 @@ public sealed class RecordReceiptHandler(
 
         await publisher.PublishAsync(OutgoingEvents.GoodsReceived(receipt), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-
         metrics.ReceiptRecorded();
-        return GoodsReceiptView.From(receipt);
+
+        // Answered from the stored row, not the object in memory, because a retry is answered from the row too
+        // and has to get the same bytes. The object holds what the request sent (2, a time to 100 ns); the row
+        // holds what the columns keep (2.000, a time to the microsecond).
+        return GoodsReceiptView.From((await StoredAsync(receipt.Id, cancellationToken))!);
     }
+
+    private Task<GoodsReceipt?> StoredAsync(Guid receiptId, CancellationToken cancellationToken) =>
+        db.GoodsReceipts.AsNoTracking().SingleOrDefaultAsync(receipt => receipt.Id == receiptId, cancellationToken);
 }
