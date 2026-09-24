@@ -18,4 +18,10 @@ internal static partial class FundsLog
         Message = "Refused to commit {Amount} for purchase order {PurchaseOrderId}, attempt {Attempt}: {Reason}")]
     public static partial void CommitmentRefused(
         this ILogger logger, decimal amount, Guid purchaseOrderId, int attempt, FundsRefusal reason);
+
+    // Allowed by design and reported, not refused, but someone owns that budget and should hear about it.
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Invoice {InvoiceId} took budget {BudgetId} past its allotment; it is overspent by {Overspend}")]
+    public static partial void BudgetOverspent(this ILogger logger, Guid invoiceId, Guid budgetId, decimal overspend);
 }

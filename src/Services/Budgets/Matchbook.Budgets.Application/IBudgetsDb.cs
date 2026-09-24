@@ -20,6 +20,8 @@ public interface IBudgetsDb
 
     DbSet<LedgerEntry> Ledger { get; }
 
+    DbSet<IdempotentRequest> Requests { get; }
+
     /// <summary>For the transaction a set-based balance update shares with the rows saved after it.</summary>
     DatabaseFacade Database { get; }
 
