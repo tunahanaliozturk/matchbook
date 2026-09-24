@@ -39,7 +39,14 @@ public static class ServiceDefaults
         builder.Services.AddHealthChecks();
         builder.Services.AddOpenApi(static options => options.AddDocumentTransformer<BearerSecurityScheme>());
         builder.Services.Configure<JsonOptions>(static options =>
-            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+            // The web defaults also accept numbers written as strings, and the OpenAPI document says so honestly:
+            // every amount and count became "number or string", and so did every client generated from it. The
+            // services only ever write numbers, so a number is what the contract now promises and accepts.
+            options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+        });
 
         // EF logs every failed command at Error, including the ones this system expects: a unique index turning
         // away the loser of a race, a row version refusing a stale write, the first look for the migrations table
