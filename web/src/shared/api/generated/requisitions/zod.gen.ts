@@ -14,6 +14,11 @@ export const zApprovalStepKind = z.enum([
     'Cfo'
 ]);
 
+export const zCostCentreOption = z.object({
+    code: z.string(),
+    name: z.string()
+});
+
 export const zHttpValidationProblemDetails = z.object({
     type: z.string().nullish(),
     title: z.string().nullish(),
@@ -108,6 +113,11 @@ export const zStepView = z.object({
     decidedAt: z.iso.datetime({ offset: true }).nullable()
 });
 
+export const zSupplierOption = z.object({
+    id: z.uuid(),
+    legalName: z.string()
+});
+
 export const zTimelineAction = z.enum([
     'Created',
     'Edited',
@@ -179,6 +189,16 @@ export const zCreateRequisitionBody = zCreateRequisitionRequest;
  * Created
  */
 export const zCreateRequisitionResponse = zRequisitionView;
+
+/**
+ * OK
+ */
+export const zListCostCentreOptionsResponse = z.array(zCostCentreOption);
+
+/**
+ * OK
+ */
+export const zListSupplierOptionsResponse = z.array(zSupplierOption);
 
 export const zGetRequisitionPath = z.object({
     id: z.uuid()

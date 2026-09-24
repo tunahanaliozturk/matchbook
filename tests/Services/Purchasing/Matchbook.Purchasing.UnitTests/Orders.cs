@@ -21,7 +21,7 @@ internal static class Orders
     public static PurchaseOrder Draft(params (decimal Quantity, decimal UnitPrice)[] lines) =>
         PurchaseOrder.Draft(Requisition(lines.Length == 0 ? TwoLines : lines), 17, Now);
 
-    public static Supplier ActiveSupplierOf(PurchaseOrder order) => new(order.SupplierId, 1, isActive: true);
+    public static Supplier ActiveSupplierOf(PurchaseOrder order) => new(order.SupplierId, 1, "Acme", isActive: true);
 
     /// <summary>Sent for commitment by Bruno, attempt 1.</summary>
     public static PurchaseOrder Pending(params (decimal Quantity, decimal UnitPrice)[] lines)

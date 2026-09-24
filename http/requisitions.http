@@ -4,7 +4,7 @@
 @gateway = http://localhost:5300/api
 @token = http://localhost:8080/realms/matchbook/protocol/openid-connect/token
 
-# An active supplier's id, as Suppliers lists it at GET {{gateway}}/suppliers.
+# An active supplier's id, as GET {{gateway}}/requisitions/suppliers lists it below.
 @supplierId = 00000000-0000-0000-0000-000000000000
 
 # A client-chosen id: sending the create twice with it returns the first requisition, not a second one.
@@ -30,6 +30,14 @@ POST {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=password&client_id=matchbook-cli&username=fiona&password=matchbook
+
+### The cost centres Rita may raise against: active, and none she manages.
+GET {{gateway}}/requisitions/cost-centres
+Authorization: Bearer {{rita.response.body.access_token}}
+
+### The suppliers she may raise against, the active ones. Put one's id in @supplierId above.
+GET {{gateway}}/requisitions/suppliers
+Authorization: Bearer {{rita.response.body.access_token}}
 
 ### Rita drafts a requisition of 12,500.00, over the finance threshold, under her own id.
 POST {{gateway}}/requisitions

@@ -23,6 +23,16 @@ export const queues: readonly Queue[] = [
         component: defineAsyncComponent(() => import("@/features/suppliers/BankAccountQueue.vue")),
     },
     {
+        key: "requisitions-to-approve",
+        roles: ["approver", "finance-approver", "cfo"],
+        component: defineAsyncComponent(() => import("@/features/approvals/ApprovalQueue.vue")),
+    },
+    {
+        key: "requisitions-to-follow-up",
+        roles: ["requester"],
+        component: defineAsyncComponent(() => import("@/features/requisitions/RequesterQueue.vue")),
+    },
+    {
         key: "supplier-drafts",
         roles: ["supplier-admin"],
         component: defineAsyncComponent(() => import("@/features/suppliers/DraftQueue.vue")),
@@ -31,6 +41,18 @@ export const queues: readonly Queue[] = [
         key: "budgets-over-allotment",
         roles: ["budget-admin"],
         component: defineAsyncComponent(() => import("@/features/budgets/OverspendQueue.vue")),
+    },
+    {
+        key: "orders-to-issue",
+        roles: ["buyer"],
+        component: defineAsyncComponent(() => import("@/features/purchase-orders/IssueQueue.vue")),
+    },
+    {
+        key: "orders-waiting-for-goods",
+        roles: ["receiver"],
+        component: defineAsyncComponent(
+            () => import("@/features/purchase-orders/ReceiveQueue.vue"),
+        ),
     },
     {
         key: "invoice-exceptions",

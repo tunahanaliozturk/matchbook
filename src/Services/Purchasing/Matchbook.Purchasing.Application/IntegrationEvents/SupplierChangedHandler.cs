@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matchbook.Purchasing.Application.IntegrationEvents;
 
-/// <summary>Keeps the local copy of a supplier's standing, applying a snapshot only when it is newer.</summary>
+/// <summary>Keeps the local copy of a supplier's standing and name, applying a snapshot only when it is newer.</summary>
 /// <remarks>
 /// The version check is the <c>WHERE</c> of a single <c>UPDATE</c>, so the database decides it under the row
 /// lock and two snapshots consumed at once cannot leave the older one in place. A status this service does not
@@ -24,6 +24,7 @@ public sealed class SupplierChangedHandler(IPurchasingDb db) : IIntegrationEvent
             .ExecuteUpdateAsync(
                 set => set
                     .SetProperty(supplier => supplier.Version, message.Version)
+                    .SetProperty(supplier => supplier.LegalName, message.LegalName)
                     .SetProperty(supplier => supplier.IsActive, isActive),
                 cancellationToken);
 
@@ -34,7 +35,7 @@ public sealed class SupplierChangedHandler(IPurchasingDb db) : IIntegrationEvent
 
         // First sight of this supplier. A concurrent first sight fails on the primary key, is retried, and then
         // takes the update path above.
-        db.Suppliers.Add(new Supplier(message.SupplierId, message.Version, isActive));
+        db.Suppliers.Add(new Supplier(message.SupplierId, message.Version, message.LegalName, isActive));
         await db.SaveChangesAsync(cancellationToken);
     }
 }

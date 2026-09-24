@@ -31,6 +31,8 @@ them in order.
 |---|---|---|
 | `POST /requisitions` | requester | 201, the draft. Idempotent on an optional `id` in the body. |
 | `GET /requisitions?after=&limit=` | requester, approver, finance-approver, cfo, auditor | 200, a page, newest first: a requester's own, everyone's for the others |
+| `GET /requisitions/cost-centres` | requester | 200, the active cost centres the caller does not manage, from the local copy, in code order, at most 200 |
+| `GET /requisitions/suppliers` | requester, approver, finance-approver, cfo, auditor | 200, the active suppliers, from the local copy, in name order, at most 200 |
 | `GET /requisitions/{id}` | as above | 200, with lines, route and timeline; 404 for a requisition the caller may not read |
 | `PUT /requisitions/{id}` | requester | 200, the edited draft |
 | `POST /requisitions/{id}/submit` | requester | 200; publishes `RequisitionSubmitted` |
@@ -187,7 +189,11 @@ and virtual host per test class, with a probe that plays the other services over
   and an OpenAPI document that describes every endpoint with its body and problems.
 - **Metrics**, read with a `MeterListener`, and the two database constraints above, by writing past the domain.
 
-`dotnet run --project tests/Services/Requisitions/Matchbook.Requisitions.IntegrationTests`: 40 tests, about a
+- **The form's choices**: the cost centres offered leave out an inactive one and one the requester manages and
+  open to requesters only; the suppliers offered leave out a blocked one, are the same for a requester and an
+  approver, and are closed to a buyer.
+
+`dotnet run --project tests/Services/Requisitions/Matchbook.Requisitions.IntegrationTests`: 42 tests, about a
 minute once the images are pulled.
 
 ## Decisions the design left open
@@ -269,6 +275,15 @@ else's, so the answer reveals nothing. Two creates racing with one id meet at th
 fails, it rereads, and it answers like a repeat. Storing a hash of each create request, or its response, was the
 alternative; that is a column and a second definition of "the same request", to cover a retry after the
 requisition was edited, and a client cannot edit what it never got an answer for.
+
+**The form's choices come from the local copies.** A requester may read neither Budgets nor Suppliers, yet has to
+pick a cost centre and a supplier. `GET /requisitions/cost-centres` and `/requisitions/suppliers` list the copies
+this service already keeps for submitting, filtered by the rules submitting applies: active, and for cost centres
+not one the caller manages. The supplier list is open to everyone who reads requisitions, because an approver
+cannot read Suppliers either and should see who is to be paid, not an id; the cost-centre list is the form's alone.
+Both are capped at 200 rather than paged, because the console shows them in a select; a search parameter is the
+next step if a company outgrows that. Opening Budgets' and Suppliers' lists to requesters was the alternative, and
+would show them managers, budgets and bank details they have no use for.
 
 **Responses are the Application's views.** `RequisitionView`, `RequisitionSummary` and `Page<T>` already exist
 to be read by someone outside the domain, so the API returns them rather than copying each into an identical

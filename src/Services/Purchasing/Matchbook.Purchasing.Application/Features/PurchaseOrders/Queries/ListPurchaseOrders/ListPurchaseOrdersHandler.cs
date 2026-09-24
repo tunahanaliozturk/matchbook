@@ -27,7 +27,8 @@ public sealed class ListPurchaseOrdersHandler(IPurchasingDb db) : IQueryHandler<
             orders = orders.Where(order => order.Id.CompareTo(after) < 0);
         }
 
-        // One row past the page tells whether there is a next page without a second count query.
+        // One row past the page tells whether there is a next page without a second count query. The supplier's
+        // name is a lookup by primary key, not a join, so an order for a supplier not heard of yet still lists.
         List<PurchaseOrderSummary> rows = await orders
             .OrderByDescending(order => order.Id)
             .Take(limit + 1)
@@ -36,6 +37,7 @@ public sealed class ListPurchaseOrdersHandler(IPurchasingDb db) : IQueryHandler<
                 order.Number,
                 order.Status,
                 order.SupplierId,
+                db.Suppliers.Where(supplier => supplier.Id == order.SupplierId).Select(supplier => supplier.LegalName).SingleOrDefault(),
                 order.CostCentreCode,
                 order.Amount,
                 order.DraftedAt))

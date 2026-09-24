@@ -14,6 +14,6 @@ public sealed class GetPurchaseOrderHandler(IPurchasingDb db) : IQueryHandler<Ge
             .SingleOrDefaultAsync(order => order.Id == query.PurchaseOrderId, cancellationToken)
             ?? throw PurchaseOrderLookup.NotFound(query.PurchaseOrderId);
 
-        return PurchaseOrderView.From(order);
+        return PurchaseOrderView.From(order, await db.Suppliers.NameOfAsync(order.SupplierId, cancellationToken));
     }
 }
