@@ -15,7 +15,11 @@ namespace Matchbook.Purchasing.Application.IncomingEvents;
 /// <c>docs/services/purchasing.md</c>.
 /// </remarks>
 public sealed class FundsCommittedHandler(
-    IPurchasingDb db, IEventPublisher publisher, TimeProvider clock, ILogger<FundsCommittedHandler> logger)
+    IPurchasingDb db,
+    IEventPublisher publisher,
+    TimeProvider clock,
+    PurchasingMetrics metrics,
+    ILogger<FundsCommittedHandler> logger)
 {
     public async Task HandleAsync(FundsCommitted message, CancellationToken cancellationToken)
     {
@@ -32,5 +36,6 @@ public sealed class FundsCommittedHandler(
 
         await publisher.PublishAsync(OutgoingEvents.Issued(order), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        metrics.OrderIssued(order);
     }
 }

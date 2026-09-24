@@ -1,0 +1,87 @@
+# Purchasing through the gateway, in the order a reader would try it. Start the stack with `docker compose up`,
+# then take a requisition through approval so Purchasing has a draft to work with.
+
+@gateway = http://localhost:5300/api
+
+### Bruno, a buyer: amends, issues and closes orders.
+# @name bruno
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=bruno&password=matchbook
+
+### Rosa, a receiver: records what arrives. She may never be the buyer who issued the order.
+# @name rosa
+POST http://localhost:8080/realms/matchbook/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=matchbook-cli&username=rosa&password=matchbook
+
+### Drafts waiting for a buyer, newest first; pass the page's next as ?after= for the following page.
+# @name drafts
+GET {{gateway}}/purchase-orders?status=Draft&limit=20
+Authorization: Bearer {{bruno.response.body.access_token}}
+
+@orderId = {{drafts.response.body.$.items[0].id}}
+
+### One order, with ordered, received and invoiced quantities on every line.
+# @name order
+GET {{gateway}}/purchase-orders/{{orderId}}
+Authorization: Bearer {{bruno.response.body.access_token}}
+
+### The same order found from its requisition, as a requisition screen would; 404 until the approval is processed.
+GET {{gateway}}/purchase-orders/by-requisition/{{order.response.body.$.requisitionId}}
+Authorization: Bearer {{bruno.response.body.access_token}}
+
+### Change a draft line's quantity and price; zero keeps the line on the order, below zero is a 422.
+PUT {{gateway}}/purchase-orders/{{orderId}}/lines/1
+Authorization: Bearer {{bruno.response.body.access_token}}
+Content-Type: application/json
+
+{ "quantity": 8, "unitPrice": 12.5 }
+
+### Issue it: 202 and CommitmentPending until Budgets commits the funds, then Issued (read the order again).
+POST {{gateway}}/purchase-orders/{{orderId}}/issue
+Authorization: Bearer {{bruno.response.body.access_token}}
+
+### Rosa records a delivery under an id she chose, so a retry after a timeout cannot receive twice.
+# @name receipt
+POST {{gateway}}/purchase-orders/{{orderId}}/receipts
+Authorization: Bearer {{rosa.response.body.access_token}}
+Content-Type: application/json
+
+{ "id": "{{$guid}}", "lines": [ { "lineNumber": 1, "quantity": 5 } ] }
+
+### The same receipt again: the first answer comes back and nothing more is received.
+POST {{gateway}}/purchase-orders/{{orderId}}/receipts
+Authorization: Bearer {{rosa.response.body.access_token}}
+Content-Type: application/json
+
+{ "id": "{{receipt.response.body.$.id}}", "lines": [ { "lineNumber": 1, "quantity": 5 } ] }
+
+### Every receipt against the order, oldest first.
+GET {{gateway}}/purchase-orders/{{orderId}}/receipts
+Authorization: Bearer {{rosa.response.body.access_token}}
+
+### One receipt, where the receipt's Location header points.
+GET {{gateway}}/purchase-orders/{{orderId}}/receipts/{{receipt.response.body.$.id}}
+Authorization: Bearer {{rosa.response.body.access_token}}
+
+### Bruno trying to receive is a 403: only a receiver records receipts.
+POST {{gateway}}/purchase-orders/{{orderId}}/receipts
+Authorization: Bearer {{bruno.response.body.access_token}}
+Content-Type: application/json
+
+{ "lines": [ { "lineNumber": 1, "quantity": 1 } ] }
+
+### Short-close: nothing more will be received, Budgets releases what it still holds, invoices still count.
+POST {{gateway}}/purchase-orders/{{orderId}}/short-close
+Authorization: Bearer {{bruno.response.body.access_token}}
+
+### Cancel works on a draft, an order waiting for Budgets, or an issued order with nothing received; this one is a 409.
+POST {{gateway}}/purchase-orders/{{orderId}}/cancel
+Authorization: Bearer {{bruno.response.body.access_token}}
+
+### Short-closed orders; every status filters the same way.
+GET {{gateway}}/purchase-orders?status=ShortClosed
+Authorization: Bearer {{bruno.response.body.access_token}}

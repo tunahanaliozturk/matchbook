@@ -17,7 +17,11 @@ namespace Matchbook.Purchasing.Application.IncomingEvents;
 /// invoice that would exceed what was received, is a defect and fails the message rather than being waited for.
 /// </remarks>
 public sealed class InvoiceMatchedHandler(
-    IPurchasingDb db, IEventPublisher publisher, TimeProvider clock, ILogger<InvoiceMatchedHandler> logger)
+    IPurchasingDb db,
+    IEventPublisher publisher,
+    TimeProvider clock,
+    PurchasingMetrics metrics,
+    ILogger<InvoiceMatchedHandler> logger)
 {
     public async Task HandleAsync(InvoiceMatched message, CancellationToken cancellationToken)
     {
@@ -42,5 +46,10 @@ public sealed class InvoiceMatchedHandler(
         }
 
         await db.SaveChangesAsync(cancellationToken);
+
+        if (completed)
+        {
+            metrics.OrderClosed(order.Status);
+        }
     }
 }

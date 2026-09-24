@@ -40,7 +40,7 @@ internal static class Orders
     }
 
     public static GoodsReceipt Receive(this PurchaseOrder order, params (int Line, decimal Quantity)[] quantities) =>
-        order.RecordReceipt(People.Rosa, [.. quantities.Select(static q => new LineQuantity(q.Line, q.Quantity))], Now);
+        order.RecordReceipt(People.Rosa, Guid.CreateVersion7(), [.. quantities.Select(static q => new LineQuantity(q.Line, q.Quantity))], Now);
 
     public static bool Invoice(this PurchaseOrder order, params (int Line, decimal Quantity)[] quantities) =>
         order.RecordInvoice([.. quantities.Select(static q => new LineQuantity(q.Line, q.Quantity))], Now);

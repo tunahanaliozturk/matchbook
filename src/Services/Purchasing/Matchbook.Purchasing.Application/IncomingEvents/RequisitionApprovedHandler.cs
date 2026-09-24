@@ -12,7 +12,7 @@ namespace Matchbook.Purchasing.Application.IncomingEvents;
 /// the first order.
 /// </remarks>
 public sealed class RequisitionApprovedHandler(
-    IPurchasingDb db, TimeProvider clock, ILogger<RequisitionApprovedHandler> logger)
+    IPurchasingDb db, TimeProvider clock, PurchasingMetrics metrics, ILogger<RequisitionApprovedHandler> logger)
 {
     public async Task HandleAsync(RequisitionApproved message, CancellationToken cancellationToken)
     {
@@ -37,5 +37,6 @@ public sealed class RequisitionApprovedHandler(
 
         db.PurchaseOrders.Add(PurchaseOrder.Draft(requisition, sequence, clock.GetUtcNow()));
         await db.SaveChangesAsync(cancellationToken);
+        metrics.OrderDrafted();
     }
 }
