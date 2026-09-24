@@ -8,6 +8,11 @@ export type ApprovalDecision = 'Pending' | 'Approved' | 'Rejected';
 
 export type ApprovalStepKind = 'Manager' | 'Finance' | 'Cfo';
 
+export type CostCentreOption = {
+    code: string;
+    name: string;
+};
+
 export type CreateRequisitionRequest = {
     /**
      * Optional. A GUID the client generates. Sending the same request again with the same id returns what the first one created; a different request with it is a 409 request.id_reused.
@@ -134,6 +139,11 @@ export type StepView = {
     decidedAt: null | string;
 };
 
+export type SupplierOption = {
+    id: string;
+    legalName: string;
+};
+
 export type TimelineAction = 'Created' | 'Edited' | 'Submitted' | 'FundsReserved' | 'FundsRefused' | 'StepApproved' | 'Approved' | 'Rejected' | 'Cancelled' | 'Ordered' | 'Closed';
 
 export type TimelineEntryView = {
@@ -257,6 +267,64 @@ export type CreateRequisitionResponses = {
 };
 
 export type CreateRequisitionResponse = CreateRequisitionResponses[keyof CreateRequisitionResponses];
+
+export type ListCostCentreOptionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/requisitions/cost-centres';
+};
+
+export type ListCostCentreOptionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type ListCostCentreOptionsError = ListCostCentreOptionsErrors[keyof ListCostCentreOptionsErrors];
+
+export type ListCostCentreOptionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<CostCentreOption>;
+};
+
+export type ListCostCentreOptionsResponse = ListCostCentreOptionsResponses[keyof ListCostCentreOptionsResponses];
+
+export type ListSupplierOptionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/requisitions/suppliers';
+};
+
+export type ListSupplierOptionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type ListSupplierOptionsError = ListSupplierOptionsErrors[keyof ListSupplierOptionsErrors];
+
+export type ListSupplierOptionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<SupplierOption>;
+};
+
+export type ListSupplierOptionsResponse = ListSupplierOptionsResponses[keyof ListSupplierOptionsResponses];
 
 export type GetRequisitionData = {
     body?: never;
