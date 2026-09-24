@@ -22,7 +22,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Orders, newest first, optionally of one status. Pass the page's next cursor as after.
+ * Orders, newest first, optionally of one status or only those still awaiting goods. Pass the page's next cursor as after.
  */
 export const listPurchaseOrders = <ThrowOnError extends boolean = true>(options?: Options<ListPurchaseOrdersData, ThrowOnError>): RequestResult<ListPurchaseOrdersResponses, ListPurchaseOrdersErrors, ThrowOnError> => (options?.client ?? client).get<ListPurchaseOrdersResponses, ListPurchaseOrdersErrors, ThrowOnError>({
     requestValidator: async (data) => await z.object({

@@ -31,6 +31,7 @@ export type {
 
 export interface PurchaseOrderFilter {
     status?: PurchaseOrderStatus;
+    awaitingGoods?: boolean;
 }
 
 // Query keys, in one place, so a mutation can say exactly what it made stale.

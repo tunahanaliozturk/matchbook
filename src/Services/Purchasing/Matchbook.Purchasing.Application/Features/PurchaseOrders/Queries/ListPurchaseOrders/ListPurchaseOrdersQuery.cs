@@ -4,8 +4,10 @@ using Matchbook.SharedKernel;
 namespace Matchbook.Purchasing.Application.Features.PurchaseOrders.Queries.ListPurchaseOrders;
 
 /// <summary>A page of orders, newest first, optionally of one status.</summary>
+/// <param name="AwaitingGoods">True for orders with a line not yet received in full, false for orders without one.</param>
 /// <param name="After">The <see cref="PurchaseOrderPage.Next"/> of the previous page; null for the first.</param>
-public sealed record ListPurchaseOrdersQuery(PurchaseOrderStatus? Status, Guid? After, int Limit) : IQuery<PurchaseOrderPage>;
+public sealed record ListPurchaseOrdersQuery(PurchaseOrderStatus? Status, bool? AwaitingGoods, Guid? After, int Limit)
+    : IQuery<PurchaseOrderPage>;
 
 /// <param name="SupplierName">From the local copy of the supplier; null until its first snapshot arrives.</param>
 public sealed record PurchaseOrderSummary(

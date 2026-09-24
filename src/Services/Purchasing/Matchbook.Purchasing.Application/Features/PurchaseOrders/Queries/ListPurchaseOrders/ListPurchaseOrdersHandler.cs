@@ -20,6 +20,11 @@ public sealed class ListPurchaseOrdersHandler(IPurchasingDb db) : IQueryHandler<
             orders = orders.Where(order => order.Status == status);
         }
 
+        if (query.AwaitingGoods is { } awaiting)
+        {
+            orders = orders.Where(order => order.Lines.Any(line => line.ReceivedQuantity < line.Quantity) == awaiting);
+        }
+
         // Keyset on the id: version 7 ids sort by creation time, so "older than the last one seen" is one index
         // range scan however deep the reader pages, where an offset would read and discard every earlier row.
         if (query.After is { } after)

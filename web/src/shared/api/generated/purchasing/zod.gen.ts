@@ -105,6 +105,7 @@ export const zRecordReceiptRequest = z.object({
 
 export const zListPurchaseOrdersQuery = z.object({
     status: zPurchaseOrderStatus.optional(),
+    awaitingGoods: z.boolean().optional(),
     after: z.uuid().optional(),
     limit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
 });

@@ -105,6 +105,7 @@ export type ListPurchaseOrdersData = {
     path?: never;
     query?: {
         status?: PurchaseOrderStatus;
+        awaitingGoods?: boolean;
         after?: string;
         limit?: number;
     };

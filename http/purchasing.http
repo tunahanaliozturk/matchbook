@@ -86,3 +86,7 @@ Authorization: Bearer {{bruno.response.body.access_token}}
 ### Short-closed orders; every status filters the same way.
 GET {{gateway}}/purchase-orders?status=ShortClosed
 Authorization: Bearer {{bruno.response.body.access_token}}
+
+### What a receiver still has to receive: issued orders with a line not yet received in full.
+GET {{gateway}}/purchase-orders?status=Issued&awaitingGoods=true
+Authorization: Bearer {{bruno.response.body.access_token}}

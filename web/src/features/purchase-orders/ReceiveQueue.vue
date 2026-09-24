@@ -7,9 +7,9 @@ import MoneyText from "@/shared/ui/MoneyText.vue";
 
 import { usePurchaseOrderList, type PurchaseOrderFilter } from "./data";
 
-// Every issued order, including one received in full that still waits for its invoices: the list does not carry
-// line totals, and opening such an order says plainly that everything has arrived.
-const filter: PurchaseOrderFilter = { status: "Issued" };
+// Issued orders with a line not yet received in full. One received in full still waits for its invoices, but not
+// for the receiver.
+const filter: PurchaseOrderFilter = { status: "Issued", awaitingGoods: true };
 const list = usePurchaseOrderList(filter, 5);
 const items = computed(() => list.data.value?.pages[0]?.items ?? []);
 </script>

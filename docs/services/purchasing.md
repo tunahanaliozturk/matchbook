@@ -188,7 +188,7 @@ through it in order.
 
 | Method and path | Role | Success | Refusals worth knowing |
 |---|---|---|---|
-| `GET /purchase-orders?status=&after=&limit=` | buyer, receiver, auditor | 200 page, newest first, `next` cursor | 400 for an unknown status |
+| `GET /purchase-orders?status=&awaitingGoods=&after=&limit=` | buyer, receiver, auditor | 200 page, newest first, `next` cursor; `awaitingGoods=true` keeps orders with a line not yet received in full | 400 for an unknown status |
 | `GET /purchase-orders/{id}` | buyer, receiver, auditor | 200 order with its lines | 404 `purchase_order.not_found` |
 | `GET /purchase-orders/by-requisition/{requisitionId}` | buyer, receiver, auditor | 200 order | 404 until the approval is processed |
 | `PUT /purchase-orders/{id}/lines/{lineNumber}` | buyer | 200 order | 400 missing value, 409 `not_draft`, 422 below zero or too precise |

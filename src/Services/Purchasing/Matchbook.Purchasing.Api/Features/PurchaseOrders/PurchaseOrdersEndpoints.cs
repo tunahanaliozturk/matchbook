@@ -38,7 +38,7 @@ internal static class PurchaseOrdersEndpoints
 
         orders.MapGet("/", ListAsync)
             .WithName("ListPurchaseOrders")
-            .WithSummary("Orders, newest first, optionally of one status. Pass the page's next cursor as after.")
+            .WithSummary("Orders, newest first, optionally of one status or only those still awaiting goods. Pass the page's next cursor as after.")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .RequireAuthorization(Policies.Read);
 
@@ -110,11 +110,13 @@ internal static class PurchaseOrdersEndpoints
 
     private static async Task<Ok<PurchaseOrderPage>> ListAsync(
         PurchaseOrderStatus? status,
+        bool? awaitingGoods,
         Guid? after,
         int? limit,
         IQueryHandler<ListPurchaseOrdersQuery, PurchaseOrderPage> handler,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(await handler.HandleAsync(new ListPurchaseOrdersQuery(status, after, limit ?? DefaultLimit), cancellationToken));
+        TypedResults.Ok(await handler.HandleAsync(
+            new ListPurchaseOrdersQuery(status, awaitingGoods, after, limit ?? DefaultLimit), cancellationToken));
 
     private static async Task<Ok<PurchaseOrderView>> GetAsync(
         Guid id, IQueryHandler<GetPurchaseOrderQuery, PurchaseOrderView> handler, CancellationToken cancellationToken) =>
