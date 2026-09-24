@@ -9,7 +9,9 @@ using Matchbook.Requisitions.Application.Features.Requisitions.Commands.EditRequ
 using Matchbook.Requisitions.Application.Features.Requisitions.Commands.RejectRequisition;
 using Matchbook.Requisitions.Application.Features.Requisitions.Commands.SubmitRequisition;
 using Matchbook.Requisitions.Application.Features.Requisitions.Queries.GetRequisition;
+using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListCostCentreOptions;
 using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListRequisitions;
+using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListSupplierOptions;
 using Matchbook.SharedKernel;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -43,6 +45,19 @@ internal static class RequisitionsEndpoints
             .WithSummary("The requisitions the caller may read, newest first.")
             .WithDescription("A requester sees their own; approvers and the auditor see all. Pass the previous page's nextCursor as after; limit is 1 to 200, default 50.")
             .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        // A requester may read neither Budgets nor Suppliers, so the form's choices come from this service's copies.
+        requisitions.MapGet("/cost-centres", ListCostCentreOptionsAsync)
+            .RequireAuthorization(Policies.Request)
+            .WithName("ListCostCentreOptions")
+            .WithSummary("The cost centres the caller may raise a requisition against.")
+            .WithDescription("Role: requester. The active ones the caller does not manage, as this service last heard of them, in code order; at most 200.");
+
+        requisitions.MapGet("/suppliers", ListSupplierOptionsAsync)
+            .RequireAuthorization(Policies.Request)
+            .WithName("ListSupplierOptions")
+            .WithSummary("The suppliers a requisition may be raised against.")
+            .WithDescription("Role: requester. The active ones, as this service last heard of them, in name order; at most 200.");
 
         requisitions.MapGet("/{id:guid}", GetAsync)
             .RequireAuthorization(Policies.Read)
@@ -112,6 +127,17 @@ internal static class RequisitionsEndpoints
         IQueryHandler<ListRequisitionsQuery, Page<RequisitionSummary>> handler,
         CancellationToken cancellationToken) =>
         TypedResults.Ok(await handler.HandleAsync(new ListRequisitionsQuery(after, limit, user.ToActor()), cancellationToken));
+
+    private static async Task<Ok<IReadOnlyList<CostCentreOption>>> ListCostCentreOptionsAsync(
+        ClaimsPrincipal user,
+        IQueryHandler<ListCostCentreOptionsQuery, IReadOnlyList<CostCentreOption>> handler,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await handler.HandleAsync(new ListCostCentreOptionsQuery(user.ToActor()), cancellationToken));
+
+    private static async Task<Ok<IReadOnlyList<SupplierOption>>> ListSupplierOptionsAsync(
+        IQueryHandler<ListSupplierOptionsQuery, IReadOnlyList<SupplierOption>> handler,
+        CancellationToken cancellationToken) =>
+        TypedResults.Ok(await handler.HandleAsync(new ListSupplierOptionsQuery(), cancellationToken));
 
     private static async Task<Ok<RequisitionView>> GetAsync(
         Guid id,

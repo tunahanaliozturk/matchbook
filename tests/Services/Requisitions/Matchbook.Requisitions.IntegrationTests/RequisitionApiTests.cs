@@ -1,11 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Matchbook.Contracts.Budgets;
 using Matchbook.Contracts.Requisitions;
+using Matchbook.Contracts.Suppliers;
 using Matchbook.Requisitions.Api.Features.Requisitions;
 using Matchbook.Requisitions.Application.Common;
 using Matchbook.Requisitions.Application.Features.Requisitions;
 using Matchbook.Requisitions.Application.Features.Requisitions.Commands.CreateRequisition;
+using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListCostCentreOptions;
+using Matchbook.Requisitions.Application.Features.Requisitions.Queries.ListSupplierOptions;
 using Matchbook.Requisitions.Domain;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;
@@ -143,6 +147,8 @@ public sealed class RequisitionApiTests(RequisitionsFixture fixture) : IClassFix
         (await anonymous.PostAsJsonAsync(Scenario.Url("/requisitions"), Scenario.Request(100m), Scenario.Json)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await anonymous.PostAsync(Scenario.Url($"/requisitions/{id}/approve"), null)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await anonymous.GetAsync(Scenario.Url("/approvals"))).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await anonymous.GetAsync(Scenario.Url("/requisitions/cost-centres"))).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await anonymous.GetAsync(Scenario.Url("/requisitions/suppliers"))).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -196,6 +202,37 @@ public sealed class RequisitionApiTests(RequisitionsFixture fixture) : IClassFix
     }
 
     [Fact]
+    public async Task The_form_offers_the_active_cost_centres_the_requester_does_not_manage()
+    {
+        Actor requester = TestUsers.Stranger(Roles.Requester);
+        string managed = await fixture.CostCentreManagedByAsync(requester.Id);
+        string inactive = await fixture.CostCentreManagedByAsync(TestUsers.Mark.Id);
+        await fixture.DeliverAsync(new CostCentreChanged(inactive, 2, "Closed down", TestUsers.Mark.Id, false, DateTimeOffset.UtcNow));
+
+        List<CostCentreOption> offered = await (await fixture.Client(requester).GetAsync(Scenario.Url("/requisitions/cost-centres")))
+            .ReadAsync<List<CostCentreOption>>();
+
+        offered.ShouldContain(new CostCentreOption(RequisitionsFixture.Platform, "Platform engineering"));
+        offered.ShouldNotContain(option => option.Code == managed);
+        offered.ShouldNotContain(option => option.Code == inactive);
+        (await fixture.Client(TestUsers.Mark).GetAsync(Scenario.Url("/requisitions/cost-centres"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task The_form_offers_the_active_suppliers()
+    {
+        Guid blocked = Guid.CreateVersion7();
+        await fixture.DeliverAsync(new SupplierChanged(blocked, 1, "Blocked Trading Ltd", "GB", SupplierStatus.Blocked, 30, null, DateTimeOffset.UtcNow));
+
+        List<SupplierOption> offered = await (await fixture.Client(TestUsers.Rita).GetAsync(Scenario.Url("/requisitions/suppliers")))
+            .ReadAsync<List<SupplierOption>>();
+
+        offered.ShouldContain(new SupplierOption(RequisitionsFixture.SupplierId, "Acme Office Supplies BV"));
+        offered.ShouldNotContain(option => option.Id == blocked);
+        (await fixture.Client(TestUsers.Audrey).GetAsync(Scenario.Url("/requisitions/suppliers"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task The_openapi_document_describes_every_endpoint_with_its_bodies_and_problems()
     {
         using HttpClient anonymous = fixture.Host.CreateClient();
@@ -206,6 +243,8 @@ public sealed class RequisitionApiTests(RequisitionsFixture fixture) : IClassFix
         [
             ("/requisitions", "post", "201", true),
             ("/requisitions", "get", "200", false),
+            ("/requisitions/cost-centres", "get", "200", false),
+            ("/requisitions/suppliers", "get", "200", false),
             ("/requisitions/{id}", "get", "200", false),
             ("/requisitions/{id}", "put", "200", true),
             ("/requisitions/{id}/submit", "post", "200", false),
