@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Matchbook.SharedKernel;
-using Matchbook.Suppliers.Api;
+using Matchbook.Suppliers.Api.Features.Suppliers;
 using Matchbook.Testing;
 
 namespace Matchbook.Suppliers.IntegrationTests;

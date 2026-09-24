@@ -1,5 +1,6 @@
 using Matchbook.BuildingBlocks.Hosting;
 using Matchbook.Suppliers.Api;
+using Matchbook.Suppliers.Api.Features.Suppliers;
 using Matchbook.Suppliers.Application;
 using Matchbook.Suppliers.Infrastructure;
 using Microsoft.AspNetCore.OpenApi;
@@ -10,13 +11,13 @@ builder.AddMatchbookDefaults("suppliers");
 builder.Services.AddValidation();
 builder.Services.Configure<OpenApiOptions>("v1", static options => options.DescribeProblemCodes());
 builder.Services.AddAuthorizationBuilder().AddSupplierPolicies();
-builder.Services.AddSuppliersApplication();
+builder.Services.AddSuppliersApplication().AddHandlersFrom(typeof(ISuppliersDb).Assembly);
 builder.Services.AddSuppliersInfrastructure(builder.Configuration);
 
 WebApplication app = builder.Build();
 
 app.UseMatchbookDefaults();
-app.MapSupplierEndpoints();
+app.MapSuppliersEndpoints();
 
 await app.RunAsync();
 

@@ -1,8 +1,9 @@
 using Matchbook.SharedKernel;
+using Matchbook.Suppliers.Application.Common;
 using Matchbook.Suppliers.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Matchbook.Suppliers.Application;
+namespace Matchbook.Suppliers.Application.Features.Suppliers;
 
 /// <summary>
 /// What every command on an existing supplier does around its one domain call: load the supplier, apply the

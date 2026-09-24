@@ -1,7 +1,7 @@
 using Matchbook.SharedKernel;
 using Matchbook.Suppliers.Domain;
 
-namespace Matchbook.Suppliers.Application;
+namespace Matchbook.Suppliers.Application.Features.Suppliers;
 
 /// <summary>
 /// A supplier as one particular person may see it. The same supplier reads differently to the approver

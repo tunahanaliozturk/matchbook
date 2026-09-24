@@ -1,6 +1,6 @@
 using System.Net;
 using Matchbook.SharedKernel;
-using Matchbook.Suppliers.Api;
+using Matchbook.Suppliers.Api.Features.Suppliers;
 using Matchbook.Testing;
 using SupplierChanged = Matchbook.Contracts.Suppliers.SupplierChanged;
 

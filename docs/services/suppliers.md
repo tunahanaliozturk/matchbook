@@ -48,7 +48,8 @@ release. Every proposal stays as a row with who proposed it, who decided, when, 
 IBAN in full: they have to compare it with the supplier's letter. Everyone else, the proposer and the auditor
 included, sees every IBAN masked to the last four characters, and the supplier list carries none at all
 (`Only_the_approver_reviewing_a_pending_proposal_sees_its_iban_in_full`, `The_supplier_list_carries_no_iban_at_all`).
-The rule lives in `BankAccount.MayRevealIbanTo`, and the query handlers take the caller so they can apply it.
+The rule lives in `BankAccount.MayRevealIbanTo`, and `GetSupplierQuery` carries the caller so its handler can
+apply it.
 
 ## Where an IBAN is plain text
 
@@ -190,9 +191,10 @@ payment history; nothing deletes one. There is no check on the IBAN column, beca
   supplier's account and activate it in one sitting.
 - **Unblocking clears the block.** Only bank account history is kept; who blocked a supplier and why is on the
   supplier while it is blocked.
-- **Commands on an existing supplier share one runner** (`SupplierCommandRunner`): load, one domain call,
-  publish if the version moved, save, count. Each use case keeps its own handler and command, so the API maps one
-  endpoint to one handler, but eight handlers do not repeat the same fifteen lines.
+- **Commands on an existing supplier share one runner** (`Features/Suppliers/SupplierCommandRunner`): load, one
+  domain call, publish if the version moved, save, count. Each use case keeps its own command and handler, in a
+  folder of its own under `Features/Suppliers/Commands` (ADR 0008), so the API maps one endpoint to one handler,
+  but eight handlers do not repeat the same fifteen lines.
 
 ### The service
 
@@ -213,7 +215,7 @@ payment history; nothing deletes one. There is no check on the IBAN column, beca
 - **Timestamps are cut to the microsecond** when taken, because Postgres keeps no more. Otherwise a response
   built from memory and a later read of the same row differ in the seventh decimal, and a retried create would
   not answer byte for byte as the first.
-- **The meter lives in Application**, where an outcome is known. Putting it in Infrastructure would need an
+- **The meter lives in Application** (`Common/SupplierMetrics`), where an outcome is known. Putting it in Infrastructure would need an
   interface with one implementation for the handlers to call; `IMeterFactory` is in the base library, so the
   architecture test is satisfied.
 - **Validation attributes check shape only.** A missing field is 400 with the field named. Whether a value is

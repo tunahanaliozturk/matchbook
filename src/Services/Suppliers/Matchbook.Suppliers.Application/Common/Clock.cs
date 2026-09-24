@@ -1,4 +1,4 @@
-namespace Matchbook.Suppliers.Application;
+namespace Matchbook.Suppliers.Application.Common;
 
 internal static class Clock
 {

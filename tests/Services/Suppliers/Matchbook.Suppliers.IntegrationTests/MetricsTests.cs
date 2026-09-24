@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 using System.Net;
 using Matchbook.SharedKernel;
-using Matchbook.Suppliers.Application;
+using Matchbook.Suppliers.Application.Common;
 using Matchbook.Testing;
 using Microsoft.Extensions.DependencyInjection;
 

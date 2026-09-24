@@ -1,5 +1,5 @@
 using Matchbook.SharedKernel;
-using Matchbook.Suppliers.Application;
+using Matchbook.Suppliers.Application.Features.Suppliers;
 using Matchbook.Suppliers.Domain;
 using Contract = Matchbook.Contracts.Suppliers;
 
