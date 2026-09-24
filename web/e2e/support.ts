@@ -7,6 +7,17 @@ import { expect, type Browser, type Page } from "@playwright/test";
  */
 export async function signedInAs(browser: Browser, username: string): Promise<Page> {
     const context = await browser.newContext();
+    // Every Content Security Policy violation the page reports is kept, and expectAccessible fails on any. Against the
+    // container this proves the policy and the app agree; the dev server sends no policy, so it records nothing there.
+    await context.addInitScript(() => {
+        const seen: string[] = [];
+        Object.defineProperty(window, "__cspViolations", { value: seen });
+        document.addEventListener("securitypolicyviolation", (event) =>
+            seen.push(
+                `${event.violatedDirective} blocked ${event.blockedURI || "inline"} from ${event.sourceFile || "?"}:${event.lineNumber}`,
+            ),
+        );
+    });
     const page = await context.newPage();
 
     await page.goto("/");
@@ -27,6 +38,10 @@ export async function expectAccessible(page: Page): Promise<void> {
 
     for (const colorScheme of ["light", "dark"] as const) {
         await page.emulateMedia({ colorScheme });
+        // Controls ease their colours over 180 ms; measured mid-transition, a button is neither light nor dark.
+        await page.evaluate(() =>
+            Promise.all(document.getAnimations().map((animation) => animation.finished)),
+        );
         const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
         blocking.push(
             ...results.violations
@@ -49,6 +64,11 @@ export async function expectAccessible(page: Page): Promise<void> {
             ),
         ),
     ).toEqual([]);
+
+    const csp = await page.evaluate(
+        () => (window as unknown as { __cspViolations?: string[] }).__cspViolations ?? [],
+    );
+    expect(csp, "Content Security Policy violations").toEqual([]);
 }
 
 /** A tax id no earlier run has used, since the service refuses duplicates after normalising. */

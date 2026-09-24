@@ -11,9 +11,16 @@ const gateway = process.env.MATCHBOOK_GATEWAY ?? "http://localhost:5300";
 export default defineConfig({
     plugins: [vue()],
     resolve: {
-        alias: {
-            "@": fileURLToPath(new URL("./src", import.meta.url)),
-        },
+        alias: [
+            { find: "@", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
+            // Zod configured for the Content Security Policy before any schema is created (src/shared/api/zod-config.ts).
+            {
+                find: /^zod$/,
+                replacement: fileURLToPath(
+                    new URL("./src/shared/api/zod-config.ts", import.meta.url),
+                ),
+            },
+        ],
     },
     server: {
         // The port the Keycloak client allows as a redirect, so development signs in exactly like the container.

@@ -1,4 +1,5 @@
-# Matchbook on one machine: five services, the gateway, Postgres, RabbitMQ, Keycloak and the Aspire dashboard.
+# Matchbook on one machine: five services, the gateway, the console, Postgres, RabbitMQ, Keycloak and the Aspire
+# dashboard.
 #
 # Every password, key and token below is a public development value, bound to localhost. None of them is a
 # secret, and none of them belongs in any other environment.
@@ -164,6 +165,20 @@ services:
       timeout: 3s
       retries: 30
     ports: ["5300:8080"]
+
+  # The console, served by nginx, which proxies /api to the gateway. Sign in as any seeded person (docs/design.md).
+  web:
+    build:
+      context: ./web
+    restart: unless-stopped
+    depends_on:
+      gateway: { condition: service_healthy }
+    ports: ["5301:8080"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
 volumes:
   postgres:
