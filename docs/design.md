@@ -50,16 +50,18 @@ Each service is four projects, and `tests/Matchbook.ArchitectureTests` checks th
 - **`Matchbook.<Service>.Domain`**: aggregates, value objects, rules. References only `Matchbook.SharedKernel`. No
   EF attributes, no JSON attributes, no async. Throws `BusinessRuleException` with a stable code when a rule says
   no. Takes the time as an argument (`DateTimeOffset now`), never reads a clock.
-- **`Matchbook.<Service>.Application`**: one handler class per use case, plus the handlers for incoming events.
-  Queries and writes through `I<Service>Db`, an interface declared here that exposes the `DbSet`s and
+- **`Matchbook.<Service>.Application`**: every use case a command or a query (`ICommand<T>`, `IQuery<T>` from the
+  shared kernel) with one handler, in `Features/<Area>/Commands/<UseCase>/` or `Features/<Area>/Queries/<UseCase>/`,
+  and the handlers of other services' events in `IntegrationEvents/` (ADR 0008). An area is one of the path groups in
+  the API table below. Queries and writes through `I<Service>Db`, an interface declared here that exposes the `DbSet`s and
   `SaveChangesAsync`, implemented by the DbContext in Infrastructure. That interface is the only abstraction over
   persistence: no repositories, generic or otherwise. Publishes through `IEventPublisher` from the shared kernel.
   May reference EF Core (provider neutral), the contracts, and logging and DI abstractions. Never Npgsql,
   MassTransit or ASP.NET Core. `TimeProvider` for the clock.
 - **`Matchbook.<Service>.Infrastructure`**: the DbContext and its configurations, migrations, MassTransit consumers
   (thin adapters that call an Application handler), service registration.
-- **`Matchbook.<Service>.Api`**: minimal API endpoints, authorization policies, `Program.cs`. Endpoints translate
-  HTTP to a handler call and back, nothing more.
+- **`Matchbook.<Service>.Api`**: minimal API endpoints in `Features/<Area>/`, the same areas as Application,
+  authorization policies, `Program.cs`. Endpoints translate HTTP to a command or query and back, nothing more.
 
 No project of one service references a project of another. What one service knows about another comes in events.
 
