@@ -46,7 +46,7 @@ public sealed class SupplierViewTests
         BankAccount rejected = Given.Propose(supplier, ibanNumber: 1);
         supplier.RejectBankAccount(People.Approver, rejected.Id, "No", Given.Now);
         BankAccount pending = supplier.ProposeBankAccount(
-            People.Admin, Iban.Parse(TestIbans.Numbered(2)), Given.Bic, "Acme GmbH", Given.Now.AddHours(2));
+            People.Admin, Guid.NewGuid(), Iban.Parse(TestIbans.Numbered(2)), Given.Bic, "Acme GmbH", Given.Now.AddHours(2));
 
         SupplierView view = SupplierView.For(supplier, People.Auditor);
 

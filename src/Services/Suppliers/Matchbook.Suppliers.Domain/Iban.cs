@@ -35,8 +35,11 @@ public sealed record Iban
 
     public string Value { get; }
 
+    /// <summary>Enough to tell two accounts apart on screen, and nothing more.</summary>
+    public string LastFour => Value[^VisibleCharacters..];
+
     /// <summary>The last four characters behind a fixed-width prefix, so the mask does not give away the length.</summary>
-    public string Masked => string.Concat("****", Value.AsSpan(Value.Length - VisibleCharacters));
+    public string Masked => "****" + LastFour;
 
     internal static IReadOnlyDictionary<string, int> Lengths => SepaLengths;
 

@@ -13,12 +13,13 @@ internal static class Given
     public static SupplierDetails Details(string name = "Acme GmbH", string country = "DE", int terms = 30) =>
         SupplierDetails.Create(name, "DE123456789", country, terms, "ap@acme.example");
 
-    public static Supplier Draft() => Supplier.Create(People.Admin, Details(), Now);
+    public static Supplier Draft() => Supplier.Create(People.Admin, Guid.CreateVersion7(), Details(), Now);
 
     public static Supplier DraftWithVerifiedAccount()
     {
         Supplier supplier = Draft();
-        BankAccount account = supplier.ProposeBankAccount(People.Admin, Iban.Parse(TestIbans.German), Bic, "Acme GmbH", Now);
+        BankAccount account = supplier.ProposeBankAccount(
+            People.Admin, Guid.CreateVersion7(), Iban.Parse(TestIbans.German), Bic, "Acme GmbH", Now);
         supplier.ApproveBankAccount(People.Approver, account.Id, Now.AddMinutes(5));
         return supplier;
     }
@@ -55,5 +56,10 @@ internal static class Given
 
     public static BankAccount Propose(Supplier supplier, int ibanNumber = 1, Actor? proposer = null) =>
         supplier.ProposeBankAccount(
-            proposer ?? People.Admin, Iban.Parse(TestIbans.Numbered(ibanNumber)), Bic, "Acme GmbH", Now.AddHours(1));
+            proposer ?? People.Admin,
+            Guid.CreateVersion7(),
+            Iban.Parse(TestIbans.Numbered(ibanNumber)),
+            Bic,
+            "Acme GmbH",
+            Now.AddHours(1));
 }

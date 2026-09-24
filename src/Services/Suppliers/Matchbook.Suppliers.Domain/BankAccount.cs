@@ -55,15 +55,15 @@ public sealed class BankAccount
         Status == BankAccountStatus.Pending && actor.IsIn(Roles.SupplierApprover) && actor.Id != ProposedBy;
 
     internal static BankAccount Propose(
-        Guid supplierId, Iban iban, Bic bic, string? accountHolder, Actor proposer, DateTimeOffset now) =>
-        new(Guid.CreateVersion7(now), supplierId, iban, bic, Holder(accountHolder))
+        Guid id, Guid supplierId, Iban iban, Bic bic, string? accountHolder, Actor proposer, DateTimeOffset now) =>
+        new(id, supplierId, iban, bic, Holder(accountHolder))
         {
             Status = BankAccountStatus.Pending,
             ProposedBy = proposer.Id,
             ProposedAt = now,
         };
 
-    internal bool HasSameDetailsAs(Iban iban, Bic bic, string? accountHolder) =>
+    public bool HasSameDetailsAs(Iban iban, Bic bic, string? accountHolder) =>
         Iban == iban && Bic == bic && AccountHolder == accountHolder?.Trim();
 
     internal void Approve(Actor approver, int accountVersion, DateTimeOffset now)

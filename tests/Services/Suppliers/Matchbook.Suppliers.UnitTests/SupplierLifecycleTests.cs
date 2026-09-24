@@ -11,13 +11,16 @@ public sealed class SupplierLifecycleTests
     [Fact]
     public void A_new_supplier_is_a_draft_that_records_who_created_it()
     {
-        Supplier supplier = Supplier.Create(People.Admin, Given.Details(), Given.Now);
+        Guid id = Guid.CreateVersion7();
 
+        Supplier supplier = Supplier.Create(People.Admin, id, Given.Details(), Given.Now);
+
+        supplier.Id.ShouldBe(id);
         supplier.Status.ShouldBe(SupplierStatus.Draft);
         supplier.CreatedBy.ShouldBe(People.Admin.Id);
         supplier.CreatedAt.ShouldBe(Given.Now);
-        supplier.LegalName.ShouldBe("Acme GmbH");
-        supplier.Id.Version.ShouldBe(7);
+        supplier.HasDetails(Given.Details()).ShouldBeTrue();
+        supplier.HasDetails(Given.Details(terms: 31)).ShouldBeFalse();
         supplier.VerifiedAccount.ShouldBeNull();
     }
 
@@ -27,7 +30,7 @@ public sealed class SupplierLifecycleTests
         foreach (Actor actor in (Actor[])[People.Approver, People.Auditor])
         {
             BrokenRule.Expect(RoleRequired, ViolationKind.Forbidden, () =>
-                Supplier.Create(actor, Given.Details(), Given.Now));
+                Supplier.Create(actor, Guid.CreateVersion7(), Given.Details(), Given.Now));
         }
     }
 
