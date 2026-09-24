@@ -107,7 +107,7 @@ No project of one service references a project of another. What one service know
   403 by its `Kind`. Validation of a request's shape is 400 with the failing fields.
 - Every mutating endpoint returns the resource's new state, so a client never needs a second read.
 - **Creates are idempotent on a client-supplied id.** A POST that creates something accepts an optional `id`
-  (a GUID the client generates). Repeating the request with the same id returns what the first one created instead
+  (a version 7 GUID the client generates, since lists are ordered by id). Repeating the request with the same id returns what the first one created instead
   of creating a second; the same id with different content is a 409 `request.id_reused`. A client that lost the
   response to a timeout can retry without buying twice.
 - A unique index the database enforces maps to a 409 with a stable code through `MapUniqueViolation`, so the

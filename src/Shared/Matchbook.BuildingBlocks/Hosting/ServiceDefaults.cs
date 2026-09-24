@@ -41,6 +41,13 @@ public static class ServiceDefaults
         builder.Services.Configure<JsonOptions>(static options =>
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+        // EF logs every failed command at Error, including the ones this system expects: a unique index turning
+        // away the loser of a race, a row version refusing a stale write, the first look for the migrations table
+        // on an empty database. Those are answered as 409s or handled, and anything unexpected still surfaces as
+        // an unhandled exception, logged once by the host or the bus.
+        builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Critical);
+        builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Update", LogLevel.Critical);
+
         builder.AddMatchbookTelemetry(serviceName);
         return builder;
     }

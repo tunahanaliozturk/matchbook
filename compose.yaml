@@ -18,6 +18,9 @@ x-service: &service
     retries: 30
     start_period: 10s
 
+# Each service's database connection string below sets Gss Encryption Mode=Disable. Npgsql otherwise probes for
+# Kerberos encryption first, the runtime image has no Kerberos library, and every service would log a failed
+# library load at startup. Nothing here uses Kerberos.
 x-service-environment: &service-environment
   ConnectionStrings__RabbitMq: amqp://matchbook:matchbook@rabbitmq:5672/
   Auth__Authority: http://keycloak:8080/realms/matchbook
@@ -88,7 +91,7 @@ services:
       args: { PROJECT: src/Services/Suppliers/Matchbook.Suppliers.Api, ASSEMBLY: Matchbook.Suppliers.Api }
     environment:
       <<: *service-environment
-      ConnectionStrings__Database: Host=postgres;Database=suppliers;Username=suppliers;Password=suppliers
+      ConnectionStrings__Database: Host=postgres;Database=suppliers;Username=suppliers;Password=suppliers;Gss Encryption Mode=Disable
       Encryption__ActiveKey: dev1
       Encryption__Keys__dev1: rwtgJwHKYgYxWLnCrgEOmiekii+Q3QO+3daj91P58DY=
 
@@ -99,7 +102,7 @@ services:
       args: { PROJECT: src/Services/Budgets/Matchbook.Budgets.Api, ASSEMBLY: Matchbook.Budgets.Api }
     environment:
       <<: *service-environment
-      ConnectionStrings__Database: Host=postgres;Database=budgets;Username=budgets;Password=budgets
+      ConnectionStrings__Database: Host=postgres;Database=budgets;Username=budgets;Password=budgets;Gss Encryption Mode=Disable
 
   requisitions:
     <<: *service
@@ -108,7 +111,7 @@ services:
       args: { PROJECT: src/Services/Requisitions/Matchbook.Requisitions.Api, ASSEMBLY: Matchbook.Requisitions.Api }
     environment:
       <<: *service-environment
-      ConnectionStrings__Database: Host=postgres;Database=requisitions;Username=requisitions;Password=requisitions
+      ConnectionStrings__Database: Host=postgres;Database=requisitions;Username=requisitions;Password=requisitions;Gss Encryption Mode=Disable
 
   purchasing:
     <<: *service
@@ -117,7 +120,7 @@ services:
       args: { PROJECT: src/Services/Purchasing/Matchbook.Purchasing.Api, ASSEMBLY: Matchbook.Purchasing.Api }
     environment:
       <<: *service-environment
-      ConnectionStrings__Database: Host=postgres;Database=purchasing;Username=purchasing;Password=purchasing
+      ConnectionStrings__Database: Host=postgres;Database=purchasing;Username=purchasing;Password=purchasing;Gss Encryption Mode=Disable
 
   payables:
     <<: *service
@@ -126,7 +129,7 @@ services:
       args: { PROJECT: src/Services/Payables/Matchbook.Payables.Api, ASSEMBLY: Matchbook.Payables.Api }
     environment:
       <<: *service-environment
-      ConnectionStrings__Database: Host=postgres;Database=payables;Username=payables;Password=payables
+      ConnectionStrings__Database: Host=postgres;Database=payables;Username=payables;Password=payables;Gss Encryption Mode=Disable
       Encryption__ActiveKey: dev1
       Encryption__Keys__dev1: rwtgJwHKYgYxWLnCrgEOmiekii+Q3QO+3daj91P58DY=
       Payer__Name: Matchbook Demo GmbH
