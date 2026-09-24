@@ -3,8 +3,8 @@ using System.Diagnostics.Metrics;
 using System.Net;
 using Matchbook.Contracts.Budgets;
 using Matchbook.Contracts.Purchasing;
-using Matchbook.Purchasing.Application;
-using Matchbook.Purchasing.Application.PurchaseOrders;
+using Matchbook.Purchasing.Application.Common;
+using Matchbook.Purchasing.Application.Features.PurchaseOrders;
 using Matchbook.Testing;
 
 namespace Matchbook.Purchasing.IntegrationTests;

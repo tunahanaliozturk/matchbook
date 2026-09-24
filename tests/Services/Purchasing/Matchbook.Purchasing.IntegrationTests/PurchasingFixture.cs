@@ -4,7 +4,7 @@ using Matchbook.Contracts.Budgets;
 using Matchbook.Contracts.Purchasing;
 using Matchbook.Contracts.Requisitions;
 using Matchbook.Contracts.Suppliers;
-using Matchbook.Purchasing.Application.PurchaseOrders;
+using Matchbook.Purchasing.Application.Features.PurchaseOrders;
 using Matchbook.Purchasing.Infrastructure.Persistence;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;

@@ -1,6 +1,6 @@
 using System.Net;
 using Matchbook.Contracts.Purchasing;
-using Matchbook.Purchasing.Application.PurchaseOrders;
+using Matchbook.Purchasing.Application.Features.PurchaseOrders;
 using Matchbook.Purchasing.Domain;
 using Matchbook.Testing;
 
