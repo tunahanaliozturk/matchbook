@@ -82,6 +82,10 @@ internal static class A
                 accountVersion is { } version ? Account(version) : null,
                 Now));
 
+    /// <summary>
+    /// A verified account. The domain treats the protected IBAN as an opaque value, so a readable stand-in makes the
+    /// tests clearer than real ciphertext would.
+    /// </summary>
     public static SupplierAccount Account(int version) =>
-        new(version, Iban.Parse("DE89370400440532013000"), Bic.Parse("COBADEFFXXX"), "ACME Industrial Supplies GmbH");
+        new(version, $"v1.test.account-{version}", "3000", Bic.Parse("COBADEFFXXX"), "ACME Industrial Supplies GmbH");
 }

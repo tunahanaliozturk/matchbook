@@ -5,7 +5,8 @@ namespace Matchbook.Payables.Domain.PaymentRuns;
 /// <summary>
 /// One supplier in a payment run, with the verified account the run will pay into as it stood at the draft. If the
 /// supplier's account version is still the same at release, this is still the account on record, so the bank file
-/// is written from here and stays the same however often it is downloaded.
+/// is written from here and stays the same however often it is downloaded. The account number stays encrypted; it
+/// is decrypted only while the file is written.
 /// </summary>
 public sealed class PaymentRunCreditor
 {
@@ -13,7 +14,8 @@ public sealed class PaymentRunCreditor
         Guid supplierId,
         int accountVersion,
         string accountHolder,
-        Iban iban,
+        string protectedIban,
+        string ibanLastFour,
         Bic bic,
         int itemCount,
         decimal total,
@@ -22,7 +24,8 @@ public sealed class PaymentRunCreditor
         SupplierId = supplierId;
         AccountVersion = accountVersion;
         AccountHolder = accountHolder;
-        Iban = iban;
+        ProtectedIban = protectedIban;
+        IbanLastFour = ibanLastFour;
         Bic = bic;
         ItemCount = itemCount;
         Total = total;
@@ -35,7 +38,9 @@ public sealed class PaymentRunCreditor
 
     public string AccountHolder { get; private set; }
 
-    public Iban Iban { get; private set; }
+    public string ProtectedIban { get; private set; }
+
+    public string IbanLastFour { get; private set; }
 
     public Bic Bic { get; private set; }
 
@@ -56,7 +61,8 @@ public sealed class PaymentRunCreditor
             supplier.Id,
             account.AccountVersion,
             account.AccountHolder,
-            account.Iban,
+            account.ProtectedIban,
+            account.IbanLastFour,
             account.Bic,
             itemCount,
             total,

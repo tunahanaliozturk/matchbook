@@ -4,19 +4,18 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Matchbook.Payables.Infrastructure.Configurations;
 
-/// <summary>
-/// How bank details are stored. Every IBAN column is mapped here, so encrypting them at rest changes this file and
-/// nothing in the domain or the handlers.
-/// </summary>
+/// <summary>How bank details are stored.</summary>
+/// <remarks>
+/// Account numbers are stored as the ciphertext Suppliers sent, never decrypted on the way in or out of the
+/// database. A check constraint on each such column demands the protected format, so a plain IBAN written by
+/// mistake is refused by the database rather than found in an audit.
+/// </remarks>
 internal static class BankColumns
 {
-    private static readonly ValueConverter<Iban, string> IbanAsText = new(iban => iban.Value, value => Iban.Parse(value));
+    /// <summary>What every value <c>ColumnProtector</c> writes starts with.</summary>
+    public const string ProtectedPrefix = "v1.";
 
     private static readonly ValueConverter<Bic, string> BicAsText = new(bic => bic.Value, value => Bic.Parse(value));
-
-    public static void IsIban(this PropertyBuilder<Iban> property) => property.HasConversion(IbanAsText);
-
-    public static void IsIban(this ComplexTypePropertyBuilder<Iban> property) => property.HasConversion(IbanAsText);
 
     public static void IsBic(this PropertyBuilder<Bic> property) => property.HasConversion(BicAsText).HasMaxLength(11);
 

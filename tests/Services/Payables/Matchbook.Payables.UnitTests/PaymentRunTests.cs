@@ -53,7 +53,9 @@ public sealed class PaymentRunTests
         draft.Run.Creditors.Select(creditor => (creditor.SupplierId, creditor.AccountVersion, creditor.ItemCount, creditor.Total))
             .ShouldBe([(A.SupplierId, 1, 2, 30m), (A.OtherSupplierId, 4, 1, 5m)], ignoreOrder: true);
         draft.Run.Creditors.ShouldAllBe(creditor => creditor.Status == CreditorStatus.Scheduled);
-        draft.Run.Creditors.First(creditor => creditor.SupplierId == A.SupplierId).Iban.Value.ShouldBe("DE89370400440532013000");
+        PaymentRunCreditor recorded = draft.Run.Creditors.First(creditor => creditor.SupplierId == A.SupplierId);
+        recorded.ProtectedIban.ShouldBe("v1.test.account-1");
+        recorded.IbanLastFour.ShouldBe("3000");
     }
 
     [Fact]
