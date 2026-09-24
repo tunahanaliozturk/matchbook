@@ -1,4 +1,4 @@
-using Matchbook.Payables.Application;
+using Matchbook.Payables.Application.Common;
 
 namespace Matchbook.Payables.UnitTests;
 

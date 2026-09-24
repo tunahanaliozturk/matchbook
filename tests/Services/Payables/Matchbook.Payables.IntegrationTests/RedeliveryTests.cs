@@ -1,7 +1,7 @@
 using Matchbook.Contracts.Payables;
 using Matchbook.Contracts.Purchasing;
 using Matchbook.Contracts.Suppliers;
-using Matchbook.Payables.Application.Invoices;
+using Matchbook.Payables.Application.Features.Invoices;
 using Matchbook.Payables.Domain.Invoices;
 using Matchbook.Payables.Domain.Orders;
 using Matchbook.Payables.Domain.Suppliers;

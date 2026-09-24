@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using Matchbook.Contracts.Payables;
-using Matchbook.Payables.Api.Invoices;
-using Matchbook.Payables.Application;
-using Matchbook.Payables.Application.Invoices;
+using Matchbook.Payables.Api.Features.Invoices;
+using Matchbook.Payables.Application.Common;
+using Matchbook.Payables.Application.Features.Invoices;
 using Matchbook.Payables.Domain.Invoices;
 using Matchbook.SharedKernel;
 using Matchbook.Testing;

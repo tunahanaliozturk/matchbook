@@ -3,7 +3,7 @@ using System.Xml.Linq;
 using FsCheck;
 using FsCheck.Fluent;
 using FsCheck.Xunit;
-using Matchbook.Payables.Application.PaymentRuns;
+using Matchbook.Payables.Application.Features.PaymentRuns;
 using Matchbook.Payables.Domain;
 
 namespace Matchbook.Payables.UnitTests;
