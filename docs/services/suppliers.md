@@ -6,7 +6,8 @@ Payables each keep a copy built from that event.
 
 The rules that matter here are about fraud. Someone who changes a supplier's bank account can redirect every
 payment that follows, so no single person can create a payable supplier or change where it is paid. Test names
-below are in `tests/Services/Suppliers/Matchbook.Suppliers.UnitTests`.
+below are in `tests/Services/Suppliers`: the domain in `Matchbook.Suppliers.UnitTests`, the running service
+against real Postgres and RabbitMQ in `Matchbook.Suppliers.IntegrationTests`.
 
 ## States
 
@@ -22,9 +23,10 @@ Draft ──submit──▶ PendingActivation ──activate──▶ Active ◀
 | block | either role | a reason, up to 500 characters |
 | unblock | `supplier-approver` | |
 
-The domain checks the role as well as the API. Separation of duties is only a rule if the code that enforces
-it can be tested without an HTTP request, so the person holding both roles is the case the tests use:
-`The_person_who_submitted_cannot_activate_even_holding_the_approver_role`.
+These rules live in the domain, not in endpoint policies, so they can be tested without an HTTP request and hold
+for whoever calls. The person holding both roles is the case the tests use, in the domain
+(`The_person_who_submitted_cannot_activate_even_holding_the_approver_role`) and over HTTP
+(`Holding_both_roles_does_not_let_anyone_approve_their_own_account_or_activate_their_own_submission`).
 
 ## Bank accounts
 
@@ -42,15 +44,29 @@ release. Every proposal stays as a row with who proposed it, who decided, when, 
 - **Account holder.** Required, at most 70 characters, because the creditor name in a pain.001 credit transfer
   is `Max70Text`.
 
-`Iban.ToString()` returns the masked form (`****3000`), and no validation message repeats the input
-(`An_error_message_never_repeats_the_iban`). An IBAN that slips into a log line by accident shows four
-characters.
-
 **Who sees a full IBAN.** Only a supplier approver who could decide a pending proposal sees that proposal's
-IBAN in full: they have to compare it with the supplier's letter. Everyone else, the proposer included, sees
-every IBAN masked, and the supplier list carries none at all
-(`The_approver_reviewing_a_proposal_sees_that_iban_in_full_and_every_other_masked`). The rule lives in
-`BankAccount.MayRevealIbanTo`, and the query handlers take the caller so they can apply it.
+IBAN in full: they have to compare it with the supplier's letter. Everyone else, the proposer and the auditor
+included, sees every IBAN masked to the last four characters, and the supplier list carries none at all
+(`Only_the_approver_reviewing_a_pending_proposal_sees_its_iban_in_full`, `The_supplier_list_carries_no_iban_at_all`).
+The rule lives in `BankAccount.MayRevealIbanTo`, and the query handlers take the caller so they can apply it.
+
+## Where an IBAN is plain text
+
+Only in the memory of this process, while a request handles it. Everywhere else it is ciphertext under the
+payment-data key (`Encryption:*`, AES-256-GCM through `ColumnProtector`), which only Suppliers and Payables hold
+(ADR 0007).
+
+- **At rest.** `IbanConverter` composes the value object's mapping with `ProtectedStringConverter`, so the
+  `bank_accounts.iban` column holds `v1.{keyId}.{nonce, tag and ciphertext}` and a decrypted value is parsed
+  again before the domain sees it. `Every_stored_iban_is_ciphertext_under_the_payment_data_key` reads the column
+  with Npgsql, not through the service, finds no account number in it, and decrypts it with the test key.
+- **In flight.** `SupplierChanged.BankAccount` carries `ProtectedIban` and `IbanLastFour`, never the IBAN. The
+  outbox deletes a row once the broker has it, so a test reading the table afterwards could pass on an empty
+  table; the integration fixture puts a trigger on `outbox_message` that keeps a copy of every body written.
+  `No_outbox_message_ever_carries_the_iban_and_the_event_decrypts_to_it_with_the_shared_key` checks those copies
+  and decrypts the event the probe received.
+- **In logs.** `Iban.ToString()` returns the masked form, and no validation message repeats the input
+  (`An_error_message_never_repeats_the_iban`). EF logs parameters as `?`.
 
 ## SupplierChanged
 
@@ -59,15 +75,65 @@ A snapshot: status, legal name, country, payment terms and the verified account 
 one on block, unblock, a newly approved account, or a change of name, country or terms, and not otherwise.
 `Any_sequence_of_operations_moves_the_versions_exactly_as_the_model_says` runs random operation sequences
 against an active supplier and a small model, and compares status, version, account version and both accounts
-after every step, including the steps the domain refuses.
+after every step, including the steps the domain refuses. Over HTTP,
+`A_supplier_goes_live_only_through_a_second_person_and_each_change_is_published_as_the_next_version` sees
+versions 1, 2 and 3 arrive for activation, a block and an approved account change, and nothing before activation.
 
 The handler compares the version before and after the domain call and publishes when it moved, before the one
-`SaveChangesAsync` that also writes the change, so the outbox row and the change commit together.
+`SaveChangesAsync` that also writes the change, so the outbox row and the change commit together. Every
+`OccurredAt` is UTC.
+
+## HTTP API
+
+Under `/suppliers`, behind the gateway at `/api/suppliers`. `http/suppliers.http` walks through all of it with
+real Keycloak tokens, and the OpenAPI document is at `/openapi/v1.json` (`/openapi/suppliers.json` at the
+gateway).
+
+| Method and path | Who the domain lets through | Answers |
+|---|---|---|
+| `GET /suppliers?status=&hasPendingBankAccount=&after=&limit=` | either supplier role, auditor | 200, a page (keyset on id, limit 50, at most 200) |
+| `GET /suppliers/{id}` | either supplier role, auditor | 200, 404 |
+| `POST /suppliers` | `supplier-admin` | 201, 400, 409, 422 |
+| `PUT /suppliers/{id}` | `supplier-admin` | 200, 400, 404, 409, 422 |
+| `POST /suppliers/{id}/submit` | `supplier-admin` | 200, 404, 409 |
+| `POST /suppliers/{id}/activate` | `supplier-approver`, not the submitter | 200, 404, 409 |
+| `POST /suppliers/{id}/block` | either supplier role | 200, 400, 404, 409, 422 |
+| `POST /suppliers/{id}/unblock` | `supplier-approver` | 200, 404, 409 |
+| `POST /suppliers/{id}/bank-accounts` | `supplier-admin` | 201, 400, 404, 409, 422 |
+| `POST /suppliers/{id}/bank-accounts/{accountId}/approve` | `supplier-approver`, not the proposer | 200, 404, 409 |
+| `POST /suppliers/{id}/bank-accounts/{accountId}/reject` | either supplier role | 200, 400, 404, 409, 422 |
+
+Every endpoint can also answer 401 and 403. Every mutating one returns the supplier as it is after the change.
+`The_document_describes_every_endpoint_with_its_body_and_its_problems` holds the OpenAPI document to that table.
+
+**Creates are idempotent.** `POST /suppliers` and `POST .../bank-accounts` take an optional `id`. The same
+request again with the same id answers 201 with the same supplier and writes nothing; the same id with different
+content, or from another person, is 409 `request.id_reused`
+(`Repeating_a_create_with_its_id_answers_as_the_first_did_and_creates_nothing`).
+
+**Races.** A unique index is the rule, and each one maps to the code a client sees: `ux_suppliers_tax_id` to
+`supplier.tax_id_taken`, `ux_bank_accounts_one_pending_per_supplier` to `supplier.bank_account_pending`, the
+primary keys to `request.id_reused`. Two approvals of one proposal at once meet on `xmin`, and the loser gets
+409 `concurrency.conflict`. `Two_approvals_of_one_proposal_at_once_put_it_in_force_once_and_the_loser_gets_a_conflict`
+does not hope for the race: it holds a lock on the supplier row, waits until `pg_stat_activity` shows both
+requests blocked on it, then lets go, and checks that the account version rose once and one event left.
+
+## Metrics
+
+On the `Matchbook.Suppliers` meter, exported with the rest over OTLP:
+
+| Instrument | Tag | Counts |
+|---|---|---|
+| `matchbook.suppliers.changes` | `change`: `created`, `details_changed`, `submitted`, `activated`, `blocked`, `unblocked`, `bank_account_proposed`, `bank_account_approved`, `bank_account_rejected` | changes saved; a retried request that changed nothing is not counted |
+| `matchbook.suppliers.refusals` | `code`: the rule's code, or `concurrency.conflict` | commands refused by a rule or a lost race |
+
+A rise in `bank_account_approved`, or any `supplier.self_approval`, is where a fraud review starts. Refusals by a
+unique index surface as 409s in the HTTP server metrics rather than here, because the handler never sees them.
+`Saved_changes_and_refusals_are_counted_on_the_suppliers_meter` listens to this host's meter.
 
 ## What the database enforces
 
-Every rule a stray `UPDATE` could break is repeated as a constraint. None is exercised by a test yet: the
-integration suite should insert violating rows directly and expect each named constraint to refuse them.
+Every rule a stray `UPDATE` could break is repeated as a constraint.
 
 | Constraint | Rule |
 |---|---|
@@ -83,13 +149,17 @@ integration suite should insert violating rows directly and expect each named co
 | `ck_bank_accounts_decision`, `ck_bank_accounts_version_when_approved`, `ck_bank_accounts_reason_when_rejected` | a decision is complete or absent |
 | `ck_bank_accounts_bic`, `ck_bank_accounts_status` | shapes |
 
+The unique indexes and primary keys are exercised by `RaceTests` and `IdempotencyTests`. The check constraints
+are not yet: a test should insert violating rows directly and expect each named constraint to refuse them.
+
 Both tables carry Postgres's `xmin` as a concurrency token. `bank_accounts` needs its own: approving and
-rejecting the same proposal at once both write only that row, and without a token the later write would win
+rejecting the same proposal at once both write that row, and without a token the later write would win
 silently. The foreign key from `bank_accounts` is `RESTRICT`, because deleting a supplier would delete its
-payment history; nothing deletes one. There is no check on the IBAN column, because it is where the ciphertext
-goes once IBANs are encrypted at rest; `IbanConverter` is the one mapping to change for that.
+payment history; nothing deletes one. There is no check on the IBAN column, because it holds ciphertext.
 
 ## Decisions the design left open
+
+### The domain
 
 - **IBANs from SEPA countries only**: the 41 countries on the EPC's 2025 list plus Gibraltar, the one SEPA
   territory with its own IBAN prefix (Guernsey, Jersey and the Isle of Man use GB). Payables pays by SEPA credit
@@ -121,12 +191,55 @@ goes once IBANs are encrypted at rest; `IbanConverter` is the one mapping to cha
 - **Unblocking clears the block.** Only bank account history is kept; who blocked a supplier and why is on the
   supplier while it is blocked.
 - **Commands on an existing supplier share one runner** (`SupplierCommandRunner`): load, one domain call,
-  publish if the version moved, save. Each use case keeps its own handler and command, so the API maps one
-  endpoint to one handler, but eight handlers do not repeat the same ten lines.
+  publish if the version moved, save, count. Each use case keeps its own handler and command, so the API maps one
+  endpoint to one handler, but eight handlers do not repeat the same fifteen lines.
+
+### The service
+
+- **Two coarse policies, and the domain decides the rest.** `suppliers.read` admits both supplier roles and the
+  auditor; `suppliers.write` admits the two supplier roles. Which of them may activate or approve is the domain's
+  rule, so every refusal a supplier user meets carries a code (`supplier.role_required`,
+  `supplier.self_approval`). A policy per endpoint mirroring the domain lost: two sources for one rule, and a bare
+  403 where the client could have had a code. The policies still stop everyone else before a handler runs, and
+  `An_auditor_reads_everything_and_is_stopped_before_any_change` tells the two refusals apart by the missing code.
+- **The unique index is the tax id rule.** The phase 1 handler checked for a taken tax id before inserting and
+  left races to the index. With the index mapped to `supplier.tax_id_taken`, the check only added a query and a
+  second path that nothing but a race could reach, so it went.
+- **A retried create is compared with the supplier as it is now**, and with who created it. After someone has
+  changed the supplier, a late retry no longer matches and gets `request.id_reused`; the client should read it.
+  Storing each request's hash to answer a retry exactly lost: a table and an expiry policy for a rare case. Two
+  copies of one create arriving at the same moment both miss the lookup; the primary key refuses the second
+  with `request.id_reused` rather than replaying.
+- **Timestamps are cut to the microsecond** when taken, because Postgres keeps no more. Otherwise a response
+  built from memory and a later read of the same row differ in the seventh decimal, and a retried create would
+  not answer byte for byte as the first.
+- **The meter lives in Application**, where an outcome is known. Putting it in Infrastructure would need an
+  interface with one implementation for the handlers to call; `IMeterFactory` is in the base library, so the
+  architecture test is satisfied.
+- **Validation attributes check shape only.** A missing field is 400 with the field named. Whether a value is
+  acceptable, an IBAN or 0 to 120 days, is the domain's answer, 422 with a code. Duplicating ranges in attributes
+  lost: the client would get a 400 without a code for a rule that has one.
+- **Response records mirror the views**, with enums of their own. The HTTP contract is what a generated client
+  depends on, so a renamed domain state should break the build here rather than change the document silently.
+  The OpenAPI document types the `code` extension on `ProblemDetails`, since it is the one field a client
+  branches on.
+- **`Location` is relative** (`suppliers/{id}`), so it resolves to `/api/suppliers/{id}` behind the gateway and
+  to `/suppliers/{id}` here. An absolute path would be wrong behind the gateway, and honouring
+  `X-Forwarded-Prefix` needs the gateway to send it. A proposal answers 201 without `Location`; it has no address
+  of its own.
+- **The unique-violation mapping sits in `AddSuppliersInfrastructure`**, beside the configurations that name the
+  indexes (`SupplierIndexes`), rather than in `Program.cs`, so renaming an index and its code are one change.
+- **EF's own error logs are off** (`Database.Command` and `Update` at `Critical`). EF logs every failed save as an
+  error twice, including the unique violations and lost races answered with a 409 on purpose. A failure nobody
+  expected still reaches the log once, as the unhandled exception with the Postgres error and constraint name.
+- **The model holds the first protector.** EF builds the model once per process, and the IBAN converter keeps
+  the `ColumnProtector` of the first context. There is one per process, built from configuration at start.
+- **No new migration.** The IBAN column was already `text`; encryption changed what goes into it, not the
+  schema. `dotnet ef migrations has-pending-model-changes` reports none.
 
 ## Error codes
 
-Every code starts with `supplier.`.
+Rule codes start with `supplier.`.
 
 | Codes | Status |
 |---|---|
@@ -135,14 +248,15 @@ Every code starts with `supplier.`.
 | `invalid_transition`, `no_verified_account`, `tax_id_taken`, `bank_account_pending`, `bank_account_unchanged`, `bank_account_not_pending` | 409 |
 | `not_found`, `bank_account_not_found` | 404 |
 
+Shared codes: `request.id_reused` and `concurrency.conflict` (409), `request.malformed` (400). A 400 from
+validation names the failing fields and has no code.
+
 ## Known limitations
 
 - An approver cannot decline an activation. A supplier they will not activate stays pending, or the admin fixes
   it and they activate then. A return-to-draft move is the fix when the queue needs emptying.
-- Two requests creating the same tax id at once both pass the pre-check, and the second fails on
-  `ux_suppliers_tax_id` rather than with `supplier.tax_id_taken`, unless the API maps that index name to the
-  code. The same holds for `ux_bank_accounts_one_pending_per_supplier` and `supplier.bank_account_pending`.
 - Nothing flags two suppliers sharing one IBAN, a classic sign of vendor fraud. With the column encrypted under
   a random nonce it cannot be indexed; a keyed hash of the IBAN in its own column would make it possible.
-- `SupplierChanged` carries the full IBAN, so it sits in plain text in the outbox table until delivered and in
-  the broker while queued.
+- Rows written before encryption at rest would not decrypt. None exist: the service had not run anywhere with
+  plain-text IBANs. A deployment that had them would need a one-off rewrite before this version starts.
+- The check constraints are not covered by a test yet (see above).
