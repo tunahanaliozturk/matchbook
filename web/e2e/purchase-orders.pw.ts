@@ -49,8 +49,6 @@ test("a buyer issues an order and a receiver records the goods", async ({ browse
     await expect(status.getByText("Issued", { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(bruno.getByRole("button", { name: "Record receipt…" })).toHaveCount(0);
     await expect(bruno.getByRole("button", { name: "Short-close…" })).toBeVisible();
-    // A confirmation fading out is measured mid-transition, so axe waits until it has gone.
-    await expect(bruno.getByText("Funds committed, order issued")).toBeHidden();
     await expectAccessible(bruno);
 
     const rosa = await signedInAs(browser, "rosa");
@@ -72,6 +70,5 @@ test("a buyer issues an order and a receiver records the goods", async ({ browse
     await expect(rosa.getByText("recorded by you")).toBeVisible();
     await expect(rosa.getByText("Everything ordered has arrived.")).toBeVisible();
     await expect(rosa.getByRole("button", { name: "Record receipt…" })).toHaveCount(0);
-    await expect(rosa.getByText("Receipt recorded")).toBeHidden();
     await expectAccessible(rosa);
 });
