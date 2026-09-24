@@ -8,7 +8,8 @@ like.
 
 | Container | Port on the host | Role |
 |---|---|---|
-| `gateway` | 5300 | The only public entry. Checks the token, limits each caller, routes `/api/*` to a service. |
+| `web` | 5301 | The console: static files served by nginx, which proxies `/api` to the gateway (ADR 0009). |
+| `gateway` | 5300 | The only public entry for the API. Checks the token, limits each caller, routes `/api/*` to a service. |
 | `suppliers`, `budgets`, `requisitions`, `purchasing`, `payables` | none | One service each, one database each, talking only through RabbitMQ. |
 | `postgres` | 5440 | One server, five databases, one owner role per database (ADR 0005). |
 | `rabbitmq` | 5672, 15672 | The broker, and its management UI and API. |
@@ -127,6 +128,21 @@ last request (`docs/measurements/chaos.md`).
 **Do not delete rows from `outbox_message`.** They are the events. A deleted row is a reservation or a
 commitment that one service recorded and no other will ever learn of.
 
+### Everyone is signed out, or every request answers 401, after Keycloak was restarted
+
+**Confirm.** Keycloak was recreated (`docker compose ps keycloak` shows it younger than the services), and the
+console sends people back to the sign-in page, or `http/*.http` requests answer 401 `auth.unauthenticated` with a
+fresh token. The development realm has no fixed signing key, so a recreated Keycloak signs with a new one, and the
+services and the gateway still hold the old key set.
+
+**Act.** Restart the gateway and the services so they fetch the new key set:
+`docker compose restart gateway suppliers budgets requisitions purchasing payables`. Then sign in again.
+
+**Verify.** A token from the new Keycloak is accepted: the console loads its inbox.
+
+**Do not** give a production realm the same weakness: import a realm with its keys, or keep Keycloak's database on a
+volume, so that a restart does not rotate the signing key under every service at once.
+
 ### A service will not become ready
 
 **Confirm.** `docker compose logs <service> --tail 50`. The usual causes: the database refuses the login (a
@@ -172,5 +188,11 @@ automatically yet. A missing key makes those IBANs unreadable, and the error nam
   indexes, row locks, `xmin`), but no test runs two replicas of a service against one queue.
 - **Postgres is a single point of failure.** Every service needs its database to answer anything; the outbox
   covers a broker outage, not a database one.
+- **The console holds its token in memory.** It is safe from anything that reads storage, not from a script
+  running in the page; the Content Security Policy allows scripts from the console's own origin only, and the
+  journeys fail on any policy violation. A backend for frontend with an `HttpOnly` cookie is the stronger design
+  and the first change for production (ADR 0009).
+- **The console names people from a copy of the realm's users** (`web/src/auth/people.ts`), because a person's own
+  token cannot list users. A deployment would read the identity provider's directory.
 - **The Keycloak realm is for development.** Every password is `matchbook`, and the `matchbook-cli` client
   allows the password grant so the `.http` files and the system tests can sign in without a browser.

@@ -141,7 +141,7 @@
         --caution-tint: rgb(255 159 10 / 18%);
         --negative: #ff6961;
         --negative-tint: rgb(255 69 58 / 18%);
-        --neutral: #a1a1a6;
+        --neutral: #aeaeb2; /* #a1a1a6 is 4.1:1 on its own tint */
         --neutral-tint: rgb(142 142 147 / 18%);
         --progress: #409cff;
         --progress-tint: rgb(10 132 255 / 18%);

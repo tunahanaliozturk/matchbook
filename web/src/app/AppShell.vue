@@ -15,8 +15,8 @@ import { sections } from "./navigation";
 const { person, hasAny } = useSession();
 const router = useRouter();
 
-// A destination whose feature has no routes yet is left out: a link to an unknown route throws while rendering,
-// and would take the whole window down with it.
+// A destination whose feature has no page yet is left out rather than linked, since resolving a link to a route
+// that does not exist throws and takes the whole window down with it.
 const visible = computed(() =>
     sections
         .map((section) => ({
