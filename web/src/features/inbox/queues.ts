@@ -28,6 +28,11 @@ export const queues: readonly Queue[] = [
         component: defineAsyncComponent(() => import("@/features/suppliers/DraftQueue.vue")),
     },
     {
+        key: "budgets-over-allotment",
+        roles: ["budget-admin"],
+        component: defineAsyncComponent(() => import("@/features/budgets/OverspendQueue.vue")),
+    },
+    {
         key: "invoice-exceptions",
         roles: ["ap-approver"],
         component: defineAsyncComponent(() => import("@/features/invoices/ExceptionQueue.vue")),

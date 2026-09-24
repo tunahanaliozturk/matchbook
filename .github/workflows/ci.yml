@@ -77,8 +77,45 @@ jobs:
       - name: Integration tests
         run: dotnet run --project ${{ matrix.suite }} --configuration Release
 
+  web:
+    name: console (types, lint, unit, bundle, licences)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # Vite strips types without checking them, so the type-check is its own step.
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formatting
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build and bundle budget
+        run: npm run build && npm run budget
+
+      - name: Audit npm licences
+        run: npm run licences
+
   system:
-    name: system (compose stack, chaos, reconciliation)
+    name: system (compose stack, chaos, reconciliation, console journeys)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -86,6 +123,12 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       # The README quick start, exactly as a reader runs it. If this breaks, the quick start is broken.
       - name: Start the stack
@@ -95,6 +138,30 @@ jobs:
       # hold money are killed; after each, the five databases must reconcile to the cent.
       - name: System tests
         run: dotnet run --project tests/Matchbook.SystemTests
+
+      - name: Install the console's tools
+        working-directory: web
+        run: npm ci && npx playwright install --with-deps chromium
+
+      # The console's generated client against the documents the running services serve. A difference means the
+      # contract moved and the console has not caught up.
+      - name: Contract drift
+        working-directory: web
+        run: npx openapi-ts && npx prettier --check . && git diff --exit-code -- src/shared/api/generated
+
+      # Every person's job in the browser, through the real Keycloak sign-in and the nginx container, with axe in
+      # both appearances and the Content Security Policy enforced.
+      - name: Console journeys
+        working-directory: web
+        run: npm run test:e2e
+
+      - name: Journey report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          retention-days: 7
 
       - name: Service logs
         if: failure()
